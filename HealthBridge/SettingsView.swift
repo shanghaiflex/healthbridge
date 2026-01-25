@@ -8,7 +8,6 @@ struct SettingsView: View {
             Section("Server") {
                 TextField("Server URL", text: $settings.serverURL)
                     .serverTextFieldStyle()
-                SecureField("API Key", text: $settings.apiKey)
             }
 
             Section("Data types") {

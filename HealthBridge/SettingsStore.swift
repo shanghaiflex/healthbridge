@@ -6,9 +6,6 @@ final class SettingsStore: ObservableObject {
     @Published var serverURL: String {
         didSet { defaults.set(serverURL, forKey: Keys.serverURL) }
     }
-    @Published var apiKey: String {
-        didSet { defaults.set(apiKey, forKey: Keys.apiKey) }
-    }
     @Published var enableWorkouts: Bool {
         didSet { defaults.set(enableWorkouts, forKey: Keys.enableWorkouts) }
     }
@@ -35,7 +32,6 @@ final class SettingsStore: ObservableObject {
 
     private init() {
         serverURL = defaults.string(forKey: Keys.serverURL) ?? "http://192.168.1.149:8080"
-        apiKey = defaults.string(forKey: Keys.apiKey) ?? ""
         enableWorkouts = defaults.object(forKey: Keys.enableWorkouts) as? Bool ?? true
         enableSleep = defaults.object(forKey: Keys.enableSleep) as? Bool ?? true
         enableHRV = defaults.object(forKey: Keys.enableHRV) as? Bool ?? true
@@ -47,7 +43,6 @@ final class SettingsStore: ObservableObject {
 
     private enum Keys {
         static let serverURL = "serverURL"
-        static let apiKey = "apiKey"
         static let enableWorkouts = "enableWorkouts"
         static let enableSleep = "enableSleep"
         static let enableHRV = "enableHRV"

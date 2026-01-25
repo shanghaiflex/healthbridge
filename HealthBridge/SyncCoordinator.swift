@@ -72,7 +72,7 @@ final class SyncCoordinator: ObservableObject {
         guard !batch.isEmpty else { return }
         for item in batch {
             do {
-                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, apiKey: settings.apiKey)
+                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL)
                 queue.markSent(item)
             } catch {
                 queue.markFailed(item)
@@ -83,7 +83,7 @@ final class SyncCoordinator: ObservableObject {
 
     func updateReachability() async {
         do {
-            serverReachable = try await network.healthCheck(baseURL: settings.serverURL, apiKey: settings.apiKey)
+            serverReachable = try await network.healthCheck(baseURL: settings.serverURL)
         } catch {
             serverReachable = false
         }

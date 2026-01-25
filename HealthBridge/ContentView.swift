@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var coordinator = SyncCoordinator()
-    @ObservedObject private var settings = SettingsStore.shared
 
     var body: some View {
         NavigationStack {
@@ -18,9 +17,8 @@ struct ContentView: View {
                     Button("Sync now") {
                         Task { await coordinator.syncNow() }
                     }
-                    .disabled(settings.apiKey.isEmpty)
 
-                    if settings.devMode {
+                    if SettingsStore.shared.devMode {
                         Button("Import sample JSON") {
                             Task { await coordinator.importSampleJSON() }
                         }

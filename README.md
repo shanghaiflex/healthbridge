@@ -7,7 +7,7 @@ Private SwiftUI app to sync Apple Health data to a LAN-only server over Wi-Fi.
 2. Set your Development Team in **Signing & Capabilities**.
 3. Ensure **HealthKit** capability is enabled and **Background Modes** includes `Background fetch`.
 4. Build & run on a physical iPhone (HealthKit data is limited in the simulator).
-5. In the app Settings, set `Server URL` and `API Key` (default is `http://192.168.1.149:8080`).
+5. In the app Settings, set `Server URL` (default is `http://192.168.1.149:8080`).
 6. Tap **Sync now**.
 
 ## Capabilities / Entitlements
@@ -26,6 +26,9 @@ Private SwiftUI app to sync Apple Health data to a LAN-only server over Wi-Fi.
 - `POST /v1/ingest/health/sleep`
 - `POST /v1/ingest/health/metrics`
 - `GET  /healthz`
+
+## OpenAPI
+See `openapi.yaml` for the full schema and payload shapes.
 
 ## Example JSON payloads
 ### Workouts
