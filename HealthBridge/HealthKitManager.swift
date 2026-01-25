@@ -223,7 +223,7 @@ private extension HKWorkout {
 
 private extension HKHealthStore {
     func enableBackgroundDelivery(for sampleType: HKSampleType, frequency: HKUpdateFrequency) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             enableBackgroundDelivery(for: sampleType, frequency: frequency) { success, error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -239,7 +239,7 @@ private extension HKHealthStore {
 
 private extension HKHealthStore {
     func requestAuthorization(toShare shareTypes: Set<HKSampleType>, read readTypes: Set<HKObjectType>) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             requestAuthorization(toShare: shareTypes, read: readTypes) { success, error in
                 if let error {
                     continuation.resume(throwing: error)
