@@ -8,12 +8,12 @@
 /* Begin PBXBuildFile section */
 		01A08C8D2B93D6C5008F2D28 /* HealthBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7D2B93D6C5008F2D28 /* HealthBridgeApp.swift */; };
 		01A08C8E2B93D6C5008F2D28 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7E2B93D6C5008F2D28 /* ContentView.swift */; };
-		01A08C8F2B93D6C5008F2D28 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7F2B93D6C5008F2D28 /* SettingsView.swift */; };
-		01A08C902B93D6C5008F2D28 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C802B93D6C5008F2D28 /* Models.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C3E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7F2B93D6C5008F2D28 /* SettingsView.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C3F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C802B93D6C5008F2D28 /* Models.swift */; };
 		01A08C912B93D6C5008F2D28 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C812B93D6C5008F2D28 /* HealthKitManager.swift */; };
-		01A08C922B93D6C5008F2D28 /* AnchorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C822B93D6C5008F2D28 /* AnchorStore.swift */; };
-		01A08C932B93D6C5008F2D28 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C832B93D6C5008F2D28 /* Logger.swift */; };
-		01A08C942B93D6C5008F2D28 /* SleepAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C842B93D6C5008F2D28 /* SleepAssembler.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C40 /* AnchorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C822B93D6C5008F2D28 /* AnchorStore.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C41 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C832B93D6C5008F2D28 /* Logger.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C42 /* SleepAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C842B93D6C5008F2D28 /* SleepAssembler.swift */; };
 		01A08C952B93D6C5008F2D28 /* QueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C852B93D6C5008F2D28 /* QueueManager.swift */; };
 		01A08C962B93D6C5008F2D28 /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C862B93D6C5008F2D28 /* NetworkClient.swift */; };
 		01A08C972B93D6C5008F2D28 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C872B93D6C5008F2D28 /* SyncCoordinator.swift */; };
@@ -126,7 +126,7 @@
 /* Begin PBXNativeTarget section */
 		01A08C752B93D6C5008F2D28 /* HealthBridge */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 01A08C942B93D6C5008F2D28 /* Build configuration list for PBXNativeTarget "HealthBridge" */;
+			buildConfigurationList = 8B1C2D3E4F5061728394A5BA /* Build configuration list for PBXNativeTarget "HealthBridge" */;
 			buildPhases = (
 				01A08C722B93D6C5008F2D28 /* Sources */,
 				01A08C732B93D6C5008F2D28 /* Frameworks */,
@@ -217,18 +217,18 @@
 			files = (
 				01A08C8D2B93D6C5008F2D28 /* HealthBridgeApp.swift in Sources */,
 				01A08C8E2B93D6C5008F2D28 /* ContentView.swift in Sources */,
-				01A08C8F2B93D6C5008F2D28 /* SettingsView.swift in Sources */,
-				01A08C902B93D6C5008F2D28 /* Models.swift in Sources */,
+				7A1F0B9D4C3E2A1F0B9D4C3E /* SettingsView.swift in Sources */,
+				7A1F0B9D4C3E2A1F0B9D4C3F /* Models.swift in Sources */,
 				01A08C912B93D6C5008F2D28 /* HealthKitManager.swift in Sources */,
-				01A08C922B93D6C5008F2D28 /* AnchorStore.swift in Sources */,
-				01A08C942B93D6C5008F2D28 /* SleepAssembler.swift in Sources */,
+				7A1F0B9D4C3E2A1F0B9D4C40 /* AnchorStore.swift in Sources */,
+				7A1F0B9D4C3E2A1F0B9D4C42 /* SleepAssembler.swift in Sources */,
 				01A08C952B93D6C5008F2D28 /* QueueManager.swift in Sources */,
 				01A08C962B93D6C5008F2D28 /* NetworkClient.swift in Sources */,
 				01A08C972B93D6C5008F2D28 /* SyncCoordinator.swift in Sources */,
 				01A08C982B93D6C5008F2D28 /* SampleDataLoader.swift in Sources */,
 				01A08C992B93D6C5008F2D28 /* SettingsStore.swift in Sources */,
 				01A08C9A2B93D6C5008F2D28 /* BackgroundScheduler.swift in Sources */,
-				01A08C932B93D6C5008F2D28 /* Logger.swift in Sources */,
+				7A1F0B9D4C3E2A1F0B9D4C41 /* Logger.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -245,7 +245,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		01A08C922B93D6C5008F2D28 /* Debug */ = {
+		8B1C2D3E4F5061728394A5B8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -265,7 +265,7 @@
 			};
 			name = Debug;
 		};
-		01A08C932B93D6C5008F2D28 /* Release */ = {
+		8B1C2D3E4F5061728394A5B9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -321,7 +321,7 @@
 			};
 			name = Release;
 		};
-		01A08C8F2B93D6C5008F2D28 /* Debug */ = {
+		8B1C2D3E4F5061728394A5B6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -331,7 +331,7 @@
 			};
 			name = Debug;
 		};
-		01A08C902B93D6C5008F2D28 /* Release */ = {
+		8B1C2D3E4F5061728394A5B7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -346,17 +346,17 @@
 		01A08C712B93D6C5008F2D28 /* Build configuration list for PBXProject "HealthBridge" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				01A08C8F2B93D6C5008F2D28 /* Debug */,
-				01A08C902B93D6C5008F2D28 /* Release */,
+				8B1C2D3E4F5061728394A5B6 /* Debug */,
+				8B1C2D3E4F5061728394A5B7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		01A08C942B93D6C5008F2D28 /* Build configuration list for PBXNativeTarget "HealthBridge" */ = {
+		8B1C2D3E4F5061728394A5BA /* Build configuration list for PBXNativeTarget "HealthBridge" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				01A08C922B93D6C5008F2D28 /* Debug */,
-				01A08C932B93D6C5008F2D28 /* Release */,
+				8B1C2D3E4F5061728394A5B8 /* Debug */,
+				8B1C2D3E4F5061728394A5B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
