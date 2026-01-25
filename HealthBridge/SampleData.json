@@ -1,0 +1,46 @@
+{
+  "workouts": [
+    {
+      "id": "sample-workout-1",
+      "workoutType": "running",
+      "start": "2024-01-20T07:15:00Z",
+      "end": "2024-01-20T07:45:00Z",
+      "durationMinutes": 30,
+      "distanceMeters": 4200,
+      "calories": 320,
+      "averageHeartRate": 142
+    }
+  ],
+  "sleep": [
+    {
+      "id": "sample-sleep-1",
+      "start": "2024-01-19T21:30:00Z",
+      "end": "2024-01-20T05:30:00Z",
+      "totalMinutes": 480,
+      "breakdown": {
+        "remMinutes": 90,
+        "deepMinutes": 80,
+        "coreMinutes": 270,
+        "awakeMinutes": 40
+      }
+    }
+  ],
+  "metrics": [
+    {
+      "id": "sample-hrv-1",
+      "kind": "hrv_sdnn",
+      "start": "2024-01-20T06:30:00Z",
+      "end": "2024-01-20T06:35:00Z",
+      "value": 52,
+      "unit": "ms"
+    },
+    {
+      "id": "sample-rhr-1",
+      "kind": "resting_heart_rate",
+      "start": "2024-01-20T06:00:00Z",
+      "end": "2024-01-20T06:05:00Z",
+      "value": 58,
+      "unit": "count/min"
+    }
+  ]
+}
