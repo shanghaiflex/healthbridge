@@ -29,16 +29,17 @@ final class BackgroundScheduler {
 
     private func handleAppRefresh(task: BGAppRefreshTask) {
         BackgroundScheduler.shared.schedule()
-        let coordinator = SyncCoordinator()
-        let operation = Task {
+        let operation = Task { @MainActor in
+            let coordinator = SyncCoordinator()
             await coordinator.syncNow()
+            await coordinator.refreshQueueStatus()
         }
         task.expirationHandler = {
             operation.cancel()
         }
         Task {
-            await coordinator.refreshQueueStatus()
-            task.setTaskCompleted(success: true)
+            _ = await operation.result
+            task.setTaskCompleted(success: !operation.isCancelled)
         }
     }
 }
