@@ -12,14 +12,14 @@ final class HealthKitManager {
     func requestAuthorization() async throws {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         let typesToShare: Set<HKSampleType> = []
-        let typesToRead: Set<HKObjectType> = [
+        let typesToRead: Set<HKObjectType> = Set([
             HKObjectType.workoutType(),
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
             HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
             HKObjectType.quantityType(forIdentifier: .restingHeartRate),
             HKObjectType.quantityType(forIdentifier: .stepCount),
             HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)
-        ].compactMap { $0 }
+        ].compactMap { $0 as HKObjectType? })
 
         try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead)
     }
@@ -204,7 +204,7 @@ private extension HKWorkoutActivityType {
         case .walking: return "walking"
         case .swimming: return "swimming"
         case .yoga: return "yoga"
-        case .strengthTraining: return "strength_training"
+        case .functionalStrengthTraining: return "functional_strength_training"
         case .other: return "other"
         default: return String(describing: self)
         }
