@@ -7,8 +7,8 @@ struct SettingsView: View {
         Form {
             Section("Server") {
                 TextField("Server URL", text: $settings.serverURL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
                 SecureField("API Key", text: $settings.apiKey)
             }
 
