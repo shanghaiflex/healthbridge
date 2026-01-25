@@ -1,5 +1,7 @@
-import BackgroundTasks
 import Foundation
+
+#if canImport(BackgroundTasks) && !os(macOS)
+import BackgroundTasks
 
 final class BackgroundScheduler {
     static let shared = BackgroundScheduler()
@@ -40,3 +42,13 @@ final class BackgroundScheduler {
         }
     }
 }
+#else
+final class BackgroundScheduler {
+    static let shared = BackgroundScheduler()
+
+    private init() {}
+
+    func register() {}
+    func schedule() {}
+}
+#endif
