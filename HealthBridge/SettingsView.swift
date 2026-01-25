@@ -7,8 +7,7 @@ struct SettingsView: View {
         Form {
             Section("Server") {
                 TextField("Server URL", text: $settings.serverURL)
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
+                    .serverTextFieldStyle()
                 SecureField("API Key", text: $settings.apiKey)
             }
 
@@ -32,5 +31,18 @@ struct SettingsView: View {
 #Preview {
     NavigationStack {
         SettingsView()
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func serverTextFieldStyle() -> some View {
+        #if os(iOS)
+        self
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+        #else
+        self
+        #endif
     }
 }
