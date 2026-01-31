@@ -31,7 +31,7 @@ final class SettingsStore: ObservableObject {
     private let defaults = UserDefaults.standard
 
     private init() {
-        serverURL = defaults.string(forKey: Keys.serverURL) ?? "http://192.168.1.149:8080"
+        serverURL = defaults.string(forKey: Keys.serverURL) ?? "http://192.168.1.41:8080"
         enableWorkouts = defaults.object(forKey: Keys.enableWorkouts) as? Bool ?? true
         enableSleep = defaults.object(forKey: Keys.enableSleep) as? Bool ?? true
         enableHRV = defaults.object(forKey: Keys.enableHRV) as? Bool ?? true

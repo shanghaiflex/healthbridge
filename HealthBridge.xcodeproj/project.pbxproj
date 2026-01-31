@@ -1,19 +1,15 @@
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
-	classes = {};
-	objectVersion = 56;
+	classes = {
+	};
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		01A08C8D2B93D6C5008F2D28 /* HealthBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7D2B93D6C5008F2D28 /* HealthBridgeApp.swift */; };
 		01A08C8E2B93D6C5008F2D28 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7E2B93D6C5008F2D28 /* ContentView.swift */; };
-		7A1F0B9D4C3E2A1F0B9D4C3E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7F2B93D6C5008F2D28 /* SettingsView.swift */; };
-		7A1F0B9D4C3E2A1F0B9D4C3F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C802B93D6C5008F2D28 /* Models.swift */; };
 		01A08C912B93D6C5008F2D28 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C812B93D6C5008F2D28 /* HealthKitManager.swift */; };
-		7A1F0B9D4C3E2A1F0B9D4C40 /* AnchorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C822B93D6C5008F2D28 /* AnchorStore.swift */; };
-		7A1F0B9D4C3E2A1F0B9D4C41 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C832B93D6C5008F2D28 /* Logger.swift */; };
-		7A1F0B9D4C3E2A1F0B9D4C42 /* SleepAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C842B93D6C5008F2D28 /* SleepAssembler.swift */; };
 		01A08C952B93D6C5008F2D28 /* QueueManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C852B93D6C5008F2D28 /* QueueManager.swift */; };
 		01A08C962B93D6C5008F2D28 /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C862B93D6C5008F2D28 /* NetworkClient.swift */; };
 		01A08C972B93D6C5008F2D28 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C872B93D6C5008F2D28 /* SyncCoordinator.swift */; };
@@ -24,6 +20,11 @@
 		01A08CB12B93D84D008F2D28 /* SleepAssemblerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08CAF2B93D84D008F2D28 /* SleepAssemblerTests.swift */; };
 		01A08CB22B93D84D008F2D28 /* URLProtocolStub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08CB02B93D84D008F2D28 /* URLProtocolStub.swift */; };
 		01A08CB32B93D84D008F2D28 /* NetworkClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08CAE2B93D84D008F2D28 /* NetworkClientTests.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C3E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C7F2B93D6C5008F2D28 /* SettingsView.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C3F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C802B93D6C5008F2D28 /* Models.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C40 /* AnchorStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C822B93D6C5008F2D28 /* AnchorStore.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C41 /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C832B93D6C5008F2D28 /* Logger.swift */; };
+		7A1F0B9D4C3E2A1F0B9D4C42 /* SleepAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01A08C842B93D6C5008F2D28 /* SleepAssembler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -165,7 +166,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
+				LastSwiftUpdateCheck = 2620;
 				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					01A08C752B93D6C5008F2D28 = {
@@ -181,6 +182,10 @@
 			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
 			mainGroup = 01A08C6D2B93D6C5008F2D28;
 			productRefGroup = 01A08C772B93D6C5008F2D28 /* Products */;
 			projectDirPath = "";
@@ -245,46 +250,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		8B1C2D3E4F5061728394A5B8 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = HealthBridge/HealthBridge.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
-				INFOPLIST_FILE = HealthBridge/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.healthbridge.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Debug;
-		};
-		8B1C2D3E4F5061728394A5B9 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = HealthBridge/HealthBridge.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
-				INFOPLIST_FILE = HealthBridge/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.healthbridge.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
 		01A08CB42B93D84D008F2D28 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -340,6 +305,50 @@
 			};
 			name = Release;
 		};
+		8B1C2D3E4F5061728394A5B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HealthBridge/HealthBridge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8NCN36FYGA;
+				INFOPLIST_FILE = HealthBridge/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.healthbridge.sfilatov.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		8B1C2D3E4F5061728394A5B9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HealthBridge/HealthBridge.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 8NCN36FYGA;
+				INFOPLIST_FILE = HealthBridge/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.healthbridge.sfilatov.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -352,20 +361,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8B1C2D3E4F5061728394A5BA /* Build configuration list for PBXNativeTarget "HealthBridge" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8B1C2D3E4F5061728394A5B8 /* Debug */,
-				8B1C2D3E4F5061728394A5B9 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		01A08CB62B93D84D008F2D28 /* Build configuration list for PBXNativeTarget "HealthBridgeTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				01A08CB42B93D84D008F2D28 /* Debug */,
 				01A08CB52B93D84D008F2D28 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8B1C2D3E4F5061728394A5BA /* Build configuration list for PBXNativeTarget "HealthBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B1C2D3E4F5061728394A5B8 /* Debug */,
+				8B1C2D3E4F5061728394A5B9 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
