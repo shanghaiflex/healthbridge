@@ -60,10 +60,11 @@ final class LectureStore: ObservableObject {
     private func performRefresh(trigger: String) async {
         refreshing = true
         defer { refreshing = false }
+        await settings.probeLAN()
         await flushPendingListened()
         await flushPendingPositions()
         do {
-            let data = try await network.get(path: "api/lectures/preload", baseURL: settings.serverURL, authToken: settings.apiToken)
+            let data = try await network.get(path: "api/lectures/preload", baseURL: settings.baseURL, authToken: settings.apiToken)
             let response = try JSONDecoder().decode(PreloadResponse.self, from: data)
             apply(response.items)
             lastRefresh = Date()
@@ -129,7 +130,7 @@ final class LectureStore: ObservableObject {
         for (id, seconds) in pending {
             do {
                 _ = try await network.patch(path: "api/lecture/\(id)", json: ["position": seconds],
-                                            baseURL: settings.serverURL, authToken: settings.apiToken)
+                                            baseURL: settings.baseURL, authToken: settings.apiToken)
                 pending[id] = nil
             } catch {
                 break
@@ -158,7 +159,7 @@ final class LectureStore: ObservableObject {
         for id in done {
             do {
                 _ = try await network.patch(path: "api/lecture/\(id)", json: ["status": "listened", "position": 0],
-                                            baseURL: settings.serverURL, authToken: settings.apiToken)
+                                            baseURL: settings.baseURL, authToken: settings.apiToken)
                 done.removeAll { $0 == id }
             } catch {
                 break

@@ -35,9 +35,9 @@ final class SiteController: NSObject, ObservableObject {
         webView.scrollView.refreshControl = refresh
     }
 
-    /// `https://api.bodywithoutorgans.cc` → `https://bodywithoutorgans.cc`.
+    /// `https://api.bodywithoutorgans.cc` → `https://bodywithoutorgans.cc`; on the home network the mini itself.
     static var siteURL: URL? {
-        guard let api = NetworkClient.shared.absoluteURL(path: "", baseURL: SettingsStore.shared.serverURL),
+        guard let api = NetworkClient.shared.absoluteURL(path: "", baseURL: SettingsStore.shared.baseURL),
               var comps = URLComponents(url: api, resolvingAgainstBaseURL: false) else { return nil }
         if let host = comps.host, host.hasPrefix("api.") { comps.host = String(host.dropFirst(4)) }
         comps.path = ""
@@ -60,8 +60,12 @@ final class SiteController: NSObject, ObservableObject {
     /// Called when the app comes back to the foreground. While we were suspended iOS may have killed the
     /// web content process (a black tab with nothing in it) or the page may never have loaded — either way, reload.
     func resume() {
-        if webView.url == nil || webView.title?.isEmpty != false {
-            reload()
+        Task { @MainActor in
+            await SettingsStore.shared.probeLAN()
+            let wanted = Self.siteURL?.host
+            if webView.url == nil || webView.title?.isEmpty != false || (wanted != nil && webView.url?.host != wanted) {
+                reload()
+            }
         }
     }
 
@@ -99,6 +103,7 @@ extension SiteController: WKScriptMessageHandler, WKNavigationDelegate {
         guard let url = navigationAction.request.url, let host = url.host else { return decisionHandler(.allow) }
         let siteHost = MainActor.assumeIsolated { SiteController.siteURL?.host } ?? ""
         let own = host == siteHost || host.hasSuffix("." + siteHost) || host == "api." + siteHost
+            || host.hasSuffix("bodywithoutorgans.cc") || host.hasPrefix("192.168.")
         if navigationAction.navigationType == .linkActivated, !own, url.scheme?.hasPrefix("http") == true {
             Task { @MainActor in UIApplication.shared.open(url) }
             return decisionHandler(.cancel)

@@ -80,7 +80,7 @@ final class DownloadManager: NSObject, ObservableObject {
 
     func start(_ lecture: Lecture) {
         guard let path = lecture.audio, !Self.isDownloaded(lecture) else { return }
-        guard let url = NetworkClient.shared.absoluteURL(path: path, baseURL: SettingsStore.shared.serverURL) else { return }
+        guard let url = NetworkClient.shared.absoluteURL(path: path, baseURL: SettingsStore.shared.baseURL) else { return }
         reconnect()
         guard let session else { return }
         // Tasks outlive the process: after a relaunch the same file may already be on its way, and a second

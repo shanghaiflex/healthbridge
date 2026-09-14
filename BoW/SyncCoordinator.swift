@@ -88,6 +88,7 @@ final class SyncCoordinator: ObservableObject {
         defer { endSync() }
         currentTrigger = trigger
         sentThisRun = 0
+        await settings.probeLAN()
 
         do {
             try await enqueueHealthData()
@@ -156,7 +157,7 @@ final class SyncCoordinator: ObservableObject {
                 if try await splitOversizedMetricsRequestIfNeeded(item) {
                     continue
                 }
-                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken, trigger: currentTrigger)
+                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.baseURL, authToken: settings.apiToken, trigger: currentTrigger)
                 await queue.markSent(item)
                 sentThisRun += 1
             } catch {
@@ -186,7 +187,7 @@ final class SyncCoordinator: ObservableObject {
                     if try await splitOversizedMetricsRequestIfNeeded(item) {
                         continue
                     }
-                    try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken, trigger: currentTrigger)
+                    try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.baseURL, authToken: settings.apiToken, trigger: currentTrigger)
                     await queue.markSent(item)
                     sentThisRun += 1
                     sentSomething = true
@@ -205,7 +206,7 @@ final class SyncCoordinator: ObservableObject {
 
     func updateReachability() async {
         do {
-            serverReachable = try await network.healthCheck(baseURL: settings.serverURL, authToken: settings.apiToken)
+            serverReachable = try await network.healthCheck(baseURL: settings.baseURL, authToken: settings.apiToken)
         } catch {
             // Swallowing this silently made "Server reachable: No" impossible to tell apart from a stale value.
             Logger.shared.error("Health check failed: \(formatError(error))")

@@ -9,6 +9,48 @@ final class SettingsStore: ObservableObject {
     @Published var apiToken: String {
         didSet { defaults.set(apiToken, forKey: Keys.apiToken) }
     }
+    /// The mini on the home Wi-Fi. Without a VPN the home ISP drops Cloudflare, so at home the app talks to
+    /// the mini directly; away from home (or with the VPN routing everything) it falls back to `serverURL`.
+    @Published var lanURL: String {
+        didSet { defaults.set(lanURL, forKey: Keys.lanURL) }
+    }
+    @Published private(set) var lanReachable = false
+    private var lanProbedAt: Date?
+
+    /// Where every request goes right now.
+    var baseURL: String { lanReachable && !lanURL.trimmingCharacters(in: .whitespaces).isEmpty ? lanURL : serverURL }
+    var routeName: String { lanReachable ? "домашняя сеть" : "интернет" }
+
+    /// One quick look at the LAN address (1.5 s); the answer is reused for a minute.
+    @MainActor
+    func probeLAN(force: Bool = false) async {
+        let lan = lanURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !lan.isEmpty, let url = NetworkClient.shared.absoluteURL(path: "healthz", baseURL: lan) else {
+            lanReachable = false
+            return
+        }
+        if !force, let t = lanProbedAt, Date().timeIntervalSince(t) < 60 { return }
+        lanProbedAt = Date()
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 1.5
+        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
+        let config = URLSessionConfiguration.ephemeral
+        config.waitsForConnectivity = false
+        config.timeoutIntervalForRequest = 1.5
+        config.timeoutIntervalForResource = 3
+        let session = URLSession(configuration: config)
+        defer { session.finishTasksAndInvalidate() }
+        let ok: Bool
+        if let (_, response) = try? await session.data(for: request), let http = response as? HTTPURLResponse {
+            ok = (200..<300).contains(http.statusCode)
+        } else {
+            ok = false
+        }
+        if ok != lanReachable {
+            ActivityLog.shared.log("Маршрут", detail: ok ? "mini по домашней сети" : "через интернет")
+        }
+        lanReachable = ok
+    }
     @Published var enableWorkouts: Bool {
         didSet { defaults.set(enableWorkouts, forKey: Keys.enableWorkouts) }
     }
@@ -60,6 +102,7 @@ final class SettingsStore: ObservableObject {
             apiToken = defaultToken
             defaults.set(defaultToken, forKey: Keys.apiToken)
         }
+        lanURL = defaults.string(forKey: Keys.lanURL) ?? "http://192.168.1.40:8787"
         enableWorkouts = defaults.object(forKey: Keys.enableWorkouts) as? Bool ?? true
         enableSleep = defaults.object(forKey: Keys.enableSleep) as? Bool ?? true
         enableHRV = defaults.object(forKey: Keys.enableHRV) as? Bool ?? true
@@ -73,6 +116,7 @@ final class SettingsStore: ObservableObject {
     private enum Keys {
         static let serverURL = "serverURL"
         static let apiToken = "apiToken"
+        static let lanURL = "lanURL"
         static let enableWorkouts = "enableWorkouts"
         static let enableSleep = "enableSleep"
         static let enableHRV = "enableHRV"

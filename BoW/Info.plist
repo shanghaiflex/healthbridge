@@ -27,6 +27,13 @@
 	<string>2</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Дома BoW ходит к Mac mini напрямую по Wi-Fi, без VPN и интернета.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>BoW читает тренировки, сон, пульс и шаги, чтобы отправить их на домашний сервер bodywithoutorgans.cc.</string>
 	<key>NSHealthUpdateUsageDescription</key>

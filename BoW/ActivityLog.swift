@@ -64,7 +64,7 @@ final class ActivityLog: ObservableObject {
         uploadScheduled = false
         lock.unlock()
         guard !batch.isEmpty,
-              let url = NetworkClient.shared.absoluteURL(path: "v1/app/log", baseURL: SettingsStore.shared.serverURL) else { return }
+              let url = NetworkClient.shared.absoluteURL(path: "v1/app/log", baseURL: SettingsStore.shared.baseURL) else { return }
         let iso = ISO8601DateFormatter()
         let payload: [String: Any] = ["entries": batch.reversed().map { e -> [String: Any] in
             var d: [String: Any] = ["at": iso.string(from: e.at), "event": e.event]

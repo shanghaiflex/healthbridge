@@ -5,7 +5,7 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("Сервер") {
+            Section {
                 TextField("URL", text: $settings.serverURL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -13,6 +13,15 @@ struct SettingsView: View {
                 SecureField("Токен", text: $settings.apiToken)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                TextField("Адрес mini в домашней сети", text: $settings.lanURL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .keyboardType(.URL)
+                LabeledContent("Сейчас", value: settings.routeName)
+            } header: {
+                Text("Сервер")
+            } footer: {
+                Text("Дома без VPN интернет-адрес не работает (провайдер режет Cloudflare), поэтому приложение сначала пробует mini напрямую по Wi-Fi, а иначе идёт через интернет.")
             }
 
             Section {
