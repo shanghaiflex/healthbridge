@@ -80,20 +80,29 @@ final class DownloadManager: NSObject, ObservableObject {
 
     func start(_ lecture: Lecture) {
         guard let path = lecture.audio, !Self.isDownloaded(lecture) else { return }
-        if active.contains(lecture.id) { return }
         guard let url = NetworkClient.shared.absoluteURL(path: path, baseURL: SettingsStore.shared.serverURL) else { return }
         reconnect()
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(SettingsStore.shared.apiToken)", forHTTPHeaderField: "Authorization")
-        let task = session!.downloadTask(with: request)
-        task.taskDescription = lecture.id
-        task.countOfBytesClientExpectsToReceive = Int64(lecture.size ?? 200_000_000)
-        DispatchQueue.main.async {
-            self.active.insert(lecture.id)
-            self.progress[lecture.id] = 0
+        guard let session else { return }
+        // Tasks outlive the process: after a relaunch the same file may already be on its way, and a second
+        // task for it just doubles the traffic. So ask the session first, not our in-memory set.
+        session.getAllTasks { tasks in
+            let live: Set<URLSessionTask.State> = [.running, .suspended]
+            if tasks.contains(where: { $0.taskDescription == lecture.id && live.contains($0.state) }) {
+                DispatchQueue.main.async { self.active.insert(lecture.id) }
+                return
+            }
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(SettingsStore.shared.apiToken)", forHTTPHeaderField: "Authorization")
+            let task = session.downloadTask(with: request)
+            task.taskDescription = lecture.id
+            task.countOfBytesClientExpectsToReceive = Int64(lecture.size ?? 200_000_000)
+            DispatchQueue.main.async {
+                self.active.insert(lecture.id)
+                self.progress[lecture.id] = 0
+            }
+            ActivityLog.shared.log("Скачиваю", detail: "\(lecture.title) (\(Fmt.megabytes(lecture.size)))")
+            task.resume()
         }
-        ActivityLog.shared.log("Скачиваю", detail: "\(lecture.title) (\(Fmt.megabytes(lecture.size)))")
-        task.resume()
     }
 
     func cancel(_ lectureId: String) {
