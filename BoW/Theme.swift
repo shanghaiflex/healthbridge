@@ -1,17 +1,22 @@
 import SwiftUI
 
-/// The site's dark palette (bodywithoutorgans.cc): pure black ground, two grey surfaces, one blue accent.
+/// The site's warm palette (theme.css on bodywithoutorgans.cc, dark half): warm charcoal ground, two warm
+/// surfaces, terracotta accent, sage for «ok». Values are the same hex numbers as in theme.css.
 enum Theme {
-    static let bg = Color.black
-    static let surface = Color(red: 0.11, green: 0.11, blue: 0.118)      // #1c1c1e
-    static let surface2 = Color(red: 0.173, green: 0.173, blue: 0.18)    // #2c2c2e
-    static let text2 = Color(red: 0.631, green: 0.631, blue: 0.651)      // #a1a1a6
-    static let text3 = Color.white.opacity(0.48)
-    static let accent = Color(red: 0.161, green: 0.592, blue: 1.0)       // #2997ff
-    static let ok = Color(red: 0.188, green: 0.82, blue: 0.345)          // #30d158
-    static let warn = Color(red: 1.0, green: 0.624, blue: 0.039)         // #ff9f0a
-    static let line = Color.white.opacity(0.1)
+    static let bg = Color(red: 0.086, green: 0.082, blue: 0.075)         // #161513
+    static let surface = Color(red: 0.125, green: 0.118, blue: 0.106)    // #201e1b
+    static let surface2 = Color(red: 0.165, green: 0.153, blue: 0.137)   // #2a2723
+    static let text = Color(red: 0.937, green: 0.91, blue: 0.863)        // #efe8dc
+    static let text2 = Color(red: 0.651, green: 0.616, blue: 0.561)      // #a69d8f
+    static let text3 = Color(red: 0.435, green: 0.408, blue: 0.369)      // #6f685e
+    static let accent = Color(red: 0.878, green: 0.498, blue: 0.341)     // #e07f57 terracotta
+    static let ok = Color(red: 0.576, green: 0.635, blue: 0.518)         // #93a284 sage
+    static let warn = Color(red: 0.941, green: 0.627, blue: 0.439)       // #f0a070
+    static let line = Color(red: 1.0, green: 0.94, blue: 0.86).opacity(0.09)
     static let radius: CGFloat = 18
+
+    static let bgUI = UIColor(red: 0.086, green: 0.082, blue: 0.075, alpha: 1)
+    static let text2UI = UIColor(red: 0.651, green: 0.616, blue: 0.561, alpha: 1)
 }
 
 struct CardBackground: ViewModifier {

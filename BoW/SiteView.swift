@@ -6,31 +6,38 @@ import WebKit
 /// downloaded lectures to the native player instead of playing them itself.
 @MainActor
 final class SiteController: NSObject, ObservableObject {
-    static let shared = SiteController()
+    /// The whole site, first tab.
+    static let shared = SiteController(path: "/", tab: "site")
+    /// The smart-home page as its own tab: the same page as on the site, the site hides its menu for it.
+    static let home = SiteController(path: "/home.html", tab: "home")
     static let handlerName = "bow"
 
+    let path: String
+    let tab: String
     let webView: WKWebView
     @Published private(set) var loaded = false
     @Published private(set) var loading = false
     @Published private(set) var lastError: String?
     private let refresh = UIRefreshControl()
 
-    private override init() {
+    private init(path: String, tab: String) {
+        self.path = path
+        self.tab = tab
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.applicationNameForUserAgent = "BoW/2"
-        let bridge = WKUserScript(source: "window.BoW = { app: 2, downloaded: [] };", injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        let bridge = WKUserScript(source: "window.BoW = { app: 2, downloaded: [], tab: '\(tab)' };", injectionTime: .atDocumentStart, forMainFrameOnly: true)
         config.userContentController.addUserScript(bridge)
         webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
         webView.isOpaque = false
-        webView.backgroundColor = .black
-        webView.scrollView.backgroundColor = .black
+        webView.backgroundColor = Theme.bgUI
+        webView.scrollView.backgroundColor = Theme.bgUI
         super.init()
         config.userContentController.add(self, name: Self.handlerName)
         webView.navigationDelegate = self
-        refresh.tintColor = .white
+        refresh.tintColor = Theme.text2UI
         refresh.addTarget(self, action: #selector(pull), for: .valueChanged)
         webView.scrollView.refreshControl = refresh
     }
@@ -56,9 +63,9 @@ final class SiteController: NSObject, ObservableObject {
                 loaded = false
                 return
             }
-            ActivityLog.shared.log("Сайт: гружу", detail: site.absoluteString)
+            ActivityLog.shared.log("Сайт: гружу", detail: site.absoluteString + path)
             var comps = URLComponents(url: site.appendingPathComponent("app/login"), resolvingAgainstBaseURL: false)!
-            comps.queryItems = [URLQueryItem(name: "t", value: SettingsStore.shared.apiToken), URLQueryItem(name: "next", value: "/")]
+            comps.queryItems = [URLQueryItem(name: "t", value: SettingsStore.shared.apiToken), URLQueryItem(name: "next", value: path)]
             webView.load(URLRequest(url: comps.url!))
         }
     }
@@ -158,21 +165,24 @@ extension SiteController: WKScriptMessageHandler, WKNavigationDelegate {
 }
 
 struct SiteWebView: UIViewRepresentable {
-    func makeUIView(context: Context) -> WKWebView { SiteController.shared.webView }
+    let controller: SiteController
+    func makeUIView(context: Context) -> WKWebView { controller.webView }
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
 
 struct SiteView: View {
-    @ObservedObject private var site = SiteController.shared
+    @ObservedObject var site: SiteController
+
+    init(site: SiteController = .shared) { self.site = site }
 
     var body: some View {
         ZStack {
             Theme.bg.ignoresSafeArea()
-            SiteWebView()
+            SiteWebView(controller: site)
                 .ignoresSafeArea(edges: .bottom)
             if site.loading {
                 VStack {
-                    ProgressView().tint(.white).padding(.top, 8)
+                    ProgressView().tint(Theme.text2).padding(.top, 8)
                     Spacer()
                 }
             }

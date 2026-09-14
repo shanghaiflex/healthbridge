@@ -10,6 +10,9 @@ struct RootView: View {
                 .tag(AppState.Tab.site)
                 // Health permission on the very first launch, whichever tab is open: a background relaunch never asks.
                 .task { await SyncCoordinator.shared.bootstrap() }
+            SiteView(site: .home)
+                .tabItem { Label("Дом", systemImage: "lamp.desk") }
+                .tag(AppState.Tab.home)
             LecturesView()
                 .tabItem { Label("Лекции", systemImage: "headphones") }
                 .tag(AppState.Tab.lectures)
