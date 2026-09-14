@@ -41,6 +41,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         DownloadManager.shared.reconnect()
         Task { @MainActor in
             await SyncCoordinator.shared.startBackgroundDelivery()
+            // Every launch syncs — including the ones with no UI (locked phone, background relaunch by iOS):
+            // waiting for a view to appear meant a launch on a locked phone did nothing at all.
+            await LectureStore.shared.refresh(trigger: "launch")
+            await SyncCoordinator.shared.syncNowCompletely(trigger: "launch")
         }
         return true
     }
