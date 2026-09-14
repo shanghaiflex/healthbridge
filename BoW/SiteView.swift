@@ -11,6 +11,7 @@ final class SiteController: NSObject, ObservableObject {
 
     let webView: WKWebView
     @Published private(set) var loaded = false
+    @Published private(set) var loading = false
     @Published private(set) var lastError: String?
     private let refresh = UIRefreshControl()
 
@@ -56,6 +57,14 @@ final class SiteController: NSObject, ObservableObject {
         loadIfNeeded()
     }
 
+    /// Called when the app comes back to the foreground. While we were suspended iOS may have killed the
+    /// web content process (a black tab with nothing in it) or the page may never have loaded — either way, reload.
+    func resume() {
+        if webView.url == nil || webView.title?.isEmpty != false {
+            reload()
+        }
+    }
+
     @objc private func pull() {
         webView.reload()
     }
@@ -97,17 +106,31 @@ extension SiteController: WKScriptMessageHandler, WKNavigationDelegate {
         decisionHandler(.allow)
     }
 
+    nonisolated func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        Task { @MainActor in self.loading = true }
+    }
+
     nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         Task { @MainActor in
+            self.loading = false
             self.refresh.endRefreshing()
             self.lastError = nil
             self.pushDownloaded()
         }
     }
 
+    /// iOS reclaims the web content process of a suspended app; without this the tab stays black forever.
+    nonisolated func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        Task { @MainActor in
+            ActivityLog.shared.log("Сайт: процесс страницы убит, перезагружаю")
+            self.reload()
+        }
+    }
+
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         let text = error.localizedDescription
         Task { @MainActor in
+            self.loading = false
             self.refresh.endRefreshing()
             self.lastError = text
         }
@@ -127,6 +150,12 @@ struct SiteView: View {
             Theme.bg.ignoresSafeArea()
             SiteWebView()
                 .ignoresSafeArea(edges: .bottom)
+            if site.loading {
+                VStack {
+                    ProgressView().tint(.white).padding(.top, 8)
+                    Spacer()
+                }
+            }
             if let e = site.lastError {
                 VStack(spacing: 10) {
                     Image(systemName: "wifi.slash").font(.largeTitle).foregroundStyle(Theme.text2)
