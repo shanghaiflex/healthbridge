@@ -1,117 +1,33 @@
-# Health Bridge (iOS 16+)
+# BoW — bodywithoutorgans.cc on the phone (iOS 17+)
 
-Private SwiftUI app to sync Apple Health data to a LAN-only server over Wi-Fi.
+Private SwiftUI app, two jobs:
 
-## Quick start (real iPhone)
-1. Open `HealthBridge.xcodeproj` in Xcode 15+.
-2. Set your Development Team in **Signing & Capabilities**.
-3. Ensure **HealthKit** capability is enabled and **Background Modes** includes `Background fetch`.
-4. Build & run on a physical iPhone (HealthKit data is limited in the simulator).
-5. In the app Settings, set `Server URL` (default is `https://api.bodywithoutorgans.cc/healthz`) and `API Token`.
-6. Tap **Sync now**.
+1. **Лекции** — keeps the two lectures the site says are next (`GET /api/lectures/preload`: what is being
+   listened to, then the queue) downloaded on the phone, plays them with the screen locked (lock-screen controls,
+   ±15/30 s, speed), and pushes the position back (`PATCH /api/lecture/<id>`) every 15 s and on every pause.
+   A finished lecture is marked `listened`, its file deleted, and the next one downloaded. Downloads run in a
+   background `URLSession` (they survive the app being suspended or killed by iOS) and resume after a dropped
+   connection; Wi-Fi only by default (Settings).
+2. **Здоровье** — the old Health Bridge: HealthKit → `POST /v1/ingest/health/<workouts|sleep|metrics>` with a
+   bearer token, anchored queries, on-disk retry queue, background delivery via `HKObserverQuery`
+   + `BGTaskScheduler`. Every request carries `X-Trigger` (foreground / healthkit:<type> / bg-refresh / manual)
+   so the server log shows what woke the app. The «Здоровье» tab has a journal of launches, syncs and downloads.
 
-## Capabilities / Entitlements
-- HealthKit
-- HealthKit background delivery (`com.apple.developer.healthkit.background-delivery`)
-
-## Info.plist keys
-- `NSHealthShareUsageDescription`
-- `NSHealthUpdateUsageDescription`
-- `NSLocalNetworkUsageDescription`
-- `NSBonjourServices` (reserved for v2 discovery)
-- `NSAppTransportSecurity` → `NSAllowsLocalNetworking`
-
-## Server endpoints
-- `POST /v1/ingest/health/workouts`
-- `POST /v1/ingest/health/sleep`
-- `POST /v1/ingest/health/metrics`
-- `GET  /healthz`
-
-## OpenAPI
-See `openapi.yaml` for the full schema and payload shapes.
-
-## Example JSON payloads
-### Workouts
-```json
-{
-  "items": [
-    {
-      "id": "E2C4C4E9-6C64-4A6C-A01E-5C9502AE87F0",
-      "workoutType": "running",
-      "start": "2024-01-20T07:15:00Z",
-      "end": "2024-01-20T07:45:00Z",
-      "durationMinutes": 30,
-      "distanceMeters": 4200,
-      "calories": 320,
-      "averageHeartRate": 142
-    }
-  ],
-  "deleted": [
-    {
-      "id": "1D3F0CB2-9D88-4B49-92B0-5C2B62A1F7EF",
-      "sampleType": "workout"
-    }
-  ]
-}
+## Build & install (no App Store, personal team)
 ```
-
-### Sleep
-```json
-{
-  "items": [
-    {
-      "id": "F1AE2AA2-90F3-44A1-8AFA-4EC5B0ED4A90",
-      "start": "2024-01-19T21:30:00Z",
-      "end": "2024-01-20T05:30:00Z",
-      "totalMinutes": 480,
-      "breakdown": {
-        "remMinutes": 90,
-        "deepMinutes": 80,
-        "coreMinutes": 270,
-        "awakeMinutes": 40
-      }
-    }
-  ],
-  "deleted": [
-    {
-      "id": "2AD3E7C6-8F47-4B5D-9D4F-9EF7F0E9C580",
-      "sampleType": "sleep"
-    }
-  ]
-}
+xcodebuild -project BoW.xcodeproj -scheme BoW -destination 'id=<device udid>' -derivedDataPath build/device -allowProvisioningUpdates build
+xcrun devicectl device install app --device <udid> build/device/Build/Products/Debug-iphoneos/BoW.app
+xcrun devicectl device process launch --device <udid> cc.bodywithoutorgans.bow
 ```
+Bundle id `cc.bodywithoutorgans.bow`, team = personal (free) → the profile lives 7 days, then the app stops
+launching and must be reinstalled. The only real fix is the paid Apple Developer Program (1-year profiles,
+TestFlight over the air).
 
-### Metrics
-```json
-{
-  "items": [
-    {
-      "id": "7A4BB6F7-83F4-41B2-9F39-F5FE0ED6C6F2",
-      "kind": "hrv_sdnn",
-      "start": "2024-01-20T06:30:00Z",
-      "end": "2024-01-20T06:35:00Z",
-      "value": 52,
-      "unit": "ms"
-    },
-    {
-      "id": "0C4F25B7-0E16-4B7A-A8F5-23B1A1F4D412",
-      "kind": "resting_heart_rate",
-      "start": "2024-01-20T06:00:00Z",
-      "end": "2024-01-20T06:05:00Z",
-      "value": 58,
-      "unit": "count/min"
-    }
-  ],
-  "deleted": [
-    {
-      "id": "2D9F2CC9-ED7C-4451-9E52-0A713CE3D22D",
-      "sampleType": "resting_heart_rate"
-    }
-  ]
-}
-```
+Icon: `swift tools/icon.swift BoW/Assets.xcassets/AppIcon.appiconset/AppIcon.png`.
 
-## Notes
-- The queue stores JSON batches on disk and retries with exponential backoff.
-- Each payload includes the HealthKit UUID (`id`) for server-side de-duplication.
-- Enable **Dev mode** in Settings to reveal **Import sample JSON** for the offline pipeline test.
+## Files
+- `BoWApp.swift` — entry; the AppDelegate does everything a background launch needs (BG tasks, HealthKit observers, audio session, background-session reconnect).
+- `LectureStore` / `DownloadManager` / `PlayerEngine` — the lectures side. `LecturesView` is the screen, `PreviewData` feeds the `#Preview`s.
+- `SyncCoordinator` / `HealthKitManager` / `AnchorStore` / `QueueManager` / `NetworkClient` — the health side.
+- `ActivityLog` — persisted journal shown in the app.
+- `openapi.yaml` — the ingest API.
