@@ -38,6 +38,9 @@ struct SettingsView: View {
                     Button("Импортировать пример JSON") {
                         Task { await SyncCoordinator.shared.importSampleJSON() }
                     }
+                    Button("Сбросить очередь и перечитать год", role: .destructive) {
+                        Task { await SyncCoordinator.shared.resetImport(reason: "вручную") }
+                    }
                 }
                 LabeledContent("Версия", value: "\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"))")
             }

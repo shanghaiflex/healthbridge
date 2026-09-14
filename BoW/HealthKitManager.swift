@@ -17,6 +17,9 @@ final class HealthKitManager {
 
     private init() {}
 
+    /// Forget every anchor: the next sync re-reads the last year from scratch.
+    func resetAnchors() { anchorStore.resetAll() }
+
     func requestAuthorization() async throws {
         guard HKHealthStore.isHealthDataAvailable() else { return }
         let typesToShare: Set<HKSampleType> = []

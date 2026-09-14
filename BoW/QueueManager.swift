@@ -100,6 +100,17 @@ actor QueueManager {
         save(updated)
     }
 
+    /// Drops every queued request. Used once when the import format changes (see SyncCoordinator.resetImportIfNeeded).
+    func removeAll() -> Int {
+        loadIfNeeded()
+        let n = index.count
+        index.removeAll()
+        if let files = try? fileManager.contentsOfDirectory(at: queueDirectory, includingPropertiesForKeys: nil) {
+            for url in files { try? fileManager.removeItem(at: url) }
+        }
+        return n
+    }
+
     func status() -> QueueStatus {
         loadIfNeeded()
         let nextRetry = index.values.map(\.nextAttemptAt).min()

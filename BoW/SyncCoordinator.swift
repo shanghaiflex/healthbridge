@@ -60,6 +60,26 @@ final class SyncCoordinator: ObservableObject {
     private var currentTrigger = "manual"
     private var sentThisRun = 0
 
+    /// Bumped when the way we import changes and the old queue is better thrown away than sent.
+    /// Generation 2 (2026-09-14): the first builds crashed mid-import and re-queued the whole history on every
+    /// relaunch — ~20 copies, 49 000 files of 50 samples. Cheaper to drop them and re-read one year in pages of 500.
+    private static let importGeneration = 2
+
+    func resetImportIfNeeded() async {
+        let done = UserDefaults.standard.integer(forKey: "importGeneration")
+        guard done < Self.importGeneration else { return }
+        await resetImport(reason: "новая схема импорта")
+        UserDefaults.standard.set(Self.importGeneration, forKey: "importGeneration")
+    }
+
+    /// Drop the queue and the anchors: the next sync re-reads the last year and sends it fresh.
+    func resetImport(reason: String) async {
+        let dropped = await queue.removeAll()
+        healthKit.resetAnchors()
+        await refreshQueueStatus()
+        ActivityLog.shared.log("Очередь сброшена", detail: "\(reason): удалено \(dropped), история будет прочитана заново")
+    }
+
     func syncNowCompletely(trigger: String = "manual") async {
         guard beginSyncIfAvailable() else {
             Logger.shared.info("Sync skipped: another sync operation is already running.")

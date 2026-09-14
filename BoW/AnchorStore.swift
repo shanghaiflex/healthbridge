@@ -52,6 +52,12 @@ final class AnchorStore {
     /// background launch lives; the site only looks at the last weeks anyway.
     static let initialHistoryDays = 365
 
+    func resetAll() {
+        for key in [AnchorKey.workout, .sleep, .hrv, .restingHR, .steps, .activeEnergy] {
+            defaults.removeObject(forKey: key.rawValue)
+        }
+    }
+
     func perform(sampleType: HKSampleType, anchorKey: AnchorKey, limit: Int = HKObjectQueryNoLimit) async throws -> AnchorResult {
         try await withCheckedThrowingContinuation { continuation in
             let anchor = self.anchor(for: anchorKey)
