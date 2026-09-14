@@ -27,6 +27,7 @@ final class PlayerEngine: ObservableObject {
     private var lastSaved: Double = -100
     private var artwork: MPMediaItemArtwork?
     private var configured = false
+    private var durationDisputed = false
 
     private init() {
         let saved = UserDefaults.standard.float(forKey: "playbackRate")
@@ -111,6 +112,7 @@ final class PlayerEngine: ObservableObject {
         current = lecture
         LectureStore.shared.rememberFeatured(lecture)
         duration = Double(lecture.duration)
+        durationDisputed = false
         artwork = nil
         loadArtwork(for: lecture)
 
@@ -162,7 +164,18 @@ final class PlayerEngine: ObservableObject {
     private func tick(_ seconds: Double) {
         guard seconds.isFinite else { return }
         time = seconds
-        if let d = player?.currentItem?.duration.seconds, d.isFinite, d > 0 { duration = d }
+        // AVPlayer's own idea of the length is taken only when the catalogue has none or agrees with it: on
+        // YouTube's fragmented m4a it has reported 1:04 for a 2:54 lecture, and the app then showed «−4:49» an
+        // hour in and refused to seek past the phantom end. The catalogue's number comes from YouTube itself.
+        if let d = player?.currentItem?.duration.seconds, d.isFinite, d > 0 {
+            let known = Double(current?.duration ?? 0)
+            if known <= 0 || abs(d - known) <= max(30, known * 0.02) {
+                duration = d
+            } else if !durationDisputed {
+                durationDisputed = true
+                ActivityLog.shared.log("Длительность", detail: "плеер: \(Fmt.clock(d)), каталог: \(Fmt.clock(known)) — верю каталогу")
+            }
+        }
         if isPlaying, seconds - lastSaved >= 15 { flushPosition(force: false) }
         MPNowPlayingInfoCenter.default().nowPlayingInfo?[MPNowPlayingInfoPropertyElapsedPlaybackTime] = seconds
     }
