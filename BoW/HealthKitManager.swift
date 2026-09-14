@@ -128,9 +128,18 @@ final class HealthKitManager {
         return FetchResult(items: items, deleted: deletions, commit: { commits.forEach { $0() } })
     }
 
-    private func fetchMetric(type metricType: MetricSampleType) async throws -> FetchResult<MetricPayload> {
+    /// One page of a single kind; the caller loops while pages come back full and commits after each one,
+    /// so a first import interrupted by iOS resumes where it stopped instead of starting over.
+    func fetchMetricPage(kind: MetricKind, limit: Int) async throws -> FetchResult<MetricPayload> {
+        guard let metricType = MetricSampleType.allCases.first(where: { $0.kind == kind }) else {
+            return FetchResult(items: [], deleted: [], commit: {})
+        }
+        return try await fetchMetric(type: metricType, limit: limit)
+    }
+
+    private func fetchMetric(type metricType: MetricSampleType, limit: Int = HKObjectQueryNoLimit) async throws -> FetchResult<MetricPayload> {
         guard let sampleType = metricType.hkType else { return FetchResult(items: [], deleted: [], commit: {}) }
-        let result = try await anchorStore.perform(sampleType: sampleType, anchorKey: metricType.anchorKey)
+        let result = try await anchorStore.perform(sampleType: sampleType, anchorKey: metricType.anchorKey, limit: limit)
         let quantitySamples = result.samples.compactMap { $0 as? HKQuantitySample }
         let mapped = quantitySamples.map { sample in
             MetricPayload(

@@ -100,10 +100,20 @@ final class SyncCoordinator: ObservableObject {
             try enqueueSleep(items: sleep.items, deleted: sleep.deleted)
             sleep.commit()
         }
-        if !enabledMetricKinds.isEmpty {
-            let metrics = try await healthKit.fetchMetrics(kinds: enabledMetricKinds)
-            try enqueueMetrics(items: metrics.items, deleted: metrics.deleted)
-            metrics.commit()
+        // Metrics page by page (2000 samples), anchor committed after every page: a year of steps is far more
+        // than one background launch can swallow at once, and an all-or-nothing read never finished.
+        let pageSize = 2000
+        for kind in [MetricKind.hrvSDNN, .restingHeartRate, .steps, .activeEnergy] where enabledMetricKinds.contains(kind) {
+            var pages = 0
+            while true {
+                let page = try await healthKit.fetchMetricPage(kind: kind, limit: pageSize)
+                try enqueueMetrics(items: page.items, deleted: page.deleted)
+                page.commit()
+                pages += 1
+                if page.items.count + page.deleted.count < pageSize { break }
+                // Keep the queue draining between pages so a long first import shows up on the server early.
+                if pages % 5 == 0 { try? await flushQueueCompletely() }
+            }
         }
     }
 

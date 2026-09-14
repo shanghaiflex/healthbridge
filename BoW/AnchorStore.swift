@@ -48,10 +48,17 @@ final class AnchorStore {
         }
     }
 
-    func perform(sampleType: HKSampleType, anchorKey: AnchorKey) async throws -> AnchorResult {
+    /// How far back the very first read goes. Years of step samples take longer to page through than a
+    /// background launch lives; the site only looks at the last weeks anyway.
+    static let initialHistoryDays = 365
+
+    func perform(sampleType: HKSampleType, anchorKey: AnchorKey, limit: Int = HKObjectQueryNoLimit) async throws -> AnchorResult {
         try await withCheckedThrowingContinuation { continuation in
             let anchor = self.anchor(for: anchorKey)
-            let query = HKAnchoredObjectQuery(type: sampleType, predicate: nil, anchor: anchor, limit: HKObjectQueryNoLimit) { _, samples, deleted, newAnchor, error in
+            let predicate: NSPredicate? = anchor == nil
+                ? HKQuery.predicateForSamples(withStart: Calendar.current.date(byAdding: .day, value: -Self.initialHistoryDays, to: Date()), end: nil)
+                : nil
+            let query = HKAnchoredObjectQuery(type: sampleType, predicate: predicate, anchor: anchor, limit: limit) { _, samples, deleted, newAnchor, error in
                 if let error {
                     continuation.resume(throwing: error)
                     return
