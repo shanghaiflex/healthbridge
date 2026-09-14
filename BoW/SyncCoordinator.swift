@@ -8,7 +8,7 @@ final class SyncCoordinator: ObservableObject {
     static let shared = SyncCoordinator()
 
     private static var syncInProgress = false
-    private let maxPreferredMetricsRequestBytes = 12_000
+    private let maxPreferredMetricsRequestBytes = 250_000
 
     @Published var lastSync: Date?
     @Published var lastError: String?
@@ -71,7 +71,7 @@ final class SyncCoordinator: ObservableObject {
 
         do {
             try await enqueueHealthData()
-            let queued = queue.status().queuedCount
+            let queued = await queue.status().queuedCount
             try await flushQueueCompletely()
             lastSync = Date()
             lastError = nil
@@ -92,12 +92,12 @@ final class SyncCoordinator: ObservableObject {
         // samples survive a crash and are retried forever, so it is safe to stop asking HealthKit for them.
         if settings.enableWorkouts {
             let workouts = try await healthKit.fetchWorkouts()
-            try enqueueWorkouts(items: workouts.items, deleted: workouts.deleted)
+            try await enqueueWorkouts(items: workouts.items, deleted: workouts.deleted)
             workouts.commit()
         }
         if settings.enableSleep {
             let sleep = try await healthKit.fetchSleep()
-            try enqueueSleep(items: sleep.items, deleted: sleep.deleted)
+            try await enqueueSleep(items: sleep.items, deleted: sleep.deleted)
             sleep.commit()
         }
         // Metrics page by page (2000 samples), anchor committed after every page: a year of steps is far more
@@ -107,7 +107,7 @@ final class SyncCoordinator: ObservableObject {
             var pages = 0
             while true {
                 let page = try await healthKit.fetchMetricPage(kind: kind, limit: pageSize)
-                try enqueueMetrics(items: page.items, deleted: page.deleted)
+                try await enqueueMetrics(items: page.items, deleted: page.deleted)
                 page.commit()
                 pages += 1
                 if page.items.count + page.deleted.count < pageSize { break }
@@ -129,18 +129,18 @@ final class SyncCoordinator: ObservableObject {
     func flushQueue() async throws {
         await refreshQueueStatus()
         // Process up to 50 items per flush to handle larger queues more efficiently
-        let batch = queue.nextBatch(limit: 50)
+        let batch = await queue.nextBatch(limit: 50)
         guard !batch.isEmpty else { return }
         for item in batch {
             do {
-                if try splitOversizedMetricsRequestIfNeeded(item) {
+                if try await splitOversizedMetricsRequestIfNeeded(item) {
                     continue
                 }
                 try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken, trigger: currentTrigger)
-                queue.markSent(item)
+                await queue.markSent(item)
                 sentThisRun += 1
             } catch {
-                queue.markFailed(item)
+                await queue.markFailed(item)
                 throw error
             }
         }
@@ -155,7 +155,7 @@ final class SyncCoordinator: ObservableObject {
         var roundsWithoutSend = 0
         while hasMore {
             await refreshQueueStatus()
-            let batch = queue.nextBatch(limit: 50)
+            let batch = await queue.nextBatch(limit: 50)
             guard !batch.isEmpty else {
                 hasMore = false
                 break
@@ -163,15 +163,15 @@ final class SyncCoordinator: ObservableObject {
             var sentSomething = false
             for item in batch {
                 do {
-                    if try splitOversizedMetricsRequestIfNeeded(item) {
+                    if try await splitOversizedMetricsRequestIfNeeded(item) {
                         continue
                     }
                     try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken, trigger: currentTrigger)
-                    queue.markSent(item)
+                    await queue.markSent(item)
                     sentThisRun += 1
                     sentSomething = true
                 } catch {
-                    queue.markFailed(item)
+                    await queue.markFailed(item)
                     throw error
                 }
             }
@@ -194,16 +194,16 @@ final class SyncCoordinator: ObservableObject {
     }
 
     func refreshQueueStatus() async {
-        let status = queue.status()
+        let status = await queue.status()
         queueCount = status.queuedCount
     }
 
     func importSampleJSON() async {
         do {
             let payloads = try SampleDataLoader.load()
-            try enqueue(payload: WorkoutsBatchPayload(items: payloads.workouts, deleted: []), endpoint: "v1/ingest/health/workouts")
-            try enqueue(payload: SleepBatchPayload(items: payloads.sleep, deleted: []), endpoint: "v1/ingest/health/sleep")
-            try enqueue(payload: MetricsBatchPayload(items: payloads.metrics, deleted: []), endpoint: "v1/ingest/health/metrics")
+            try await enqueue(payload: WorkoutsBatchPayload(items: payloads.workouts, deleted: []), endpoint: "v1/ingest/health/workouts")
+            try await enqueue(payload: SleepBatchPayload(items: payloads.sleep, deleted: []), endpoint: "v1/ingest/health/sleep")
+            try await enqueue(payload: MetricsBatchPayload(items: payloads.metrics, deleted: []), endpoint: "v1/ingest/health/metrics")
             try await flushQueue()
             lastSync = Date()
         } catch {
@@ -232,7 +232,7 @@ final class SyncCoordinator: ObservableObject {
         Self.syncInProgress = false
     }
 
-    private func splitOversizedMetricsRequestIfNeeded(_ item: QueuedRequest) throws -> Bool {
+    private func splitOversizedMetricsRequestIfNeeded(_ item: QueuedRequest) async throws -> Bool {
         guard item.endpoint == "v1/ingest/health/metrics", item.bodyData.count > maxPreferredMetricsRequestBytes else {
             return false
         }
@@ -254,35 +254,35 @@ final class SyncCoordinator: ObservableObject {
         }
         let chunkSize = max(1, unitCount / 2)
 
-        try enqueueMetrics(items: batch.items, deleted: batch.deleted, chunkSize: chunkSize)
-        queue.markSent(item)
+        try await enqueueMetrics(items: batch.items, deleted: batch.deleted, chunkSize: chunkSize)
+        await queue.markSent(item)
         Logger.shared.info("Split oversized metrics payload (\(item.bodyData.count) bytes, \(unitCount) units) into chunks of \(chunkSize).")
         return true
     }
 
-    private func enqueueWorkouts(items: [WorkoutPayload], deleted: [DeletionPayload]) throws {
-        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/workouts") { items, deleted in
+    private func enqueueWorkouts(items: [WorkoutPayload], deleted: [DeletionPayload]) async throws {
+        try await enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/workouts") { items, deleted in
             WorkoutsBatchPayload(items: items, deleted: deleted)
         }
     }
 
-    private func enqueueSleep(items: [SleepPayload], deleted: [DeletionPayload]) throws {
-        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/sleep") { items, deleted in
+    private func enqueueSleep(items: [SleepPayload], deleted: [DeletionPayload]) async throws {
+        try await enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/sleep") { items, deleted in
             SleepBatchPayload(items: items, deleted: deleted)
         }
     }
 
-    private func enqueueMetrics(items: [MetricPayload], deleted: [DeletionPayload], chunkSize: Int = 50) throws {
-        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/metrics", chunkSize: chunkSize) { items, deleted in
+    private func enqueueMetrics(items: [MetricPayload], deleted: [DeletionPayload], chunkSize: Int = 500) async throws {
+        try await enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/metrics", chunkSize: chunkSize) { items, deleted in
             MetricsBatchPayload(items: items, deleted: deleted)
         }
     }
 
-    private func enqueue<T: Encodable>(payload: T, endpoint: String) throws {
+    private func enqueue<T: Encodable>(payload: T, endpoint: String) async throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(payload)
-        queue.enqueue(endpoint: endpoint, bodyData: data)
+        await queue.enqueue(endpoint: endpoint, bodyData: data)
     }
 
     private func enqueueBatches<Item, Payload: Encodable>(
@@ -291,7 +291,7 @@ final class SyncCoordinator: ObservableObject {
         endpoint: String,
         chunkSize: Int = 200,
         build: ([Item], [DeletionPayload]) -> Payload
-    ) throws {
+    ) async throws {
         let itemChunks = items.chunked(into: chunkSize)
         let deletionChunks = deleted.chunked(into: chunkSize)
 
@@ -299,13 +299,13 @@ final class SyncCoordinator: ObservableObject {
             for (index, chunk) in itemChunks.enumerated() {
                 let deletions = index < deletionChunks.count ? deletionChunks[index] : []
                 let payload = build(chunk, deletions)
-                try enqueue(payload: payload, endpoint: endpoint)
+                try await enqueue(payload: payload, endpoint: endpoint)
             }
 
             if deletionChunks.count > itemChunks.count {
                 for index in itemChunks.count..<deletionChunks.count {
                     let payload = build([], deletionChunks[index])
-                    try enqueue(payload: payload, endpoint: endpoint)
+                    try await enqueue(payload: payload, endpoint: endpoint)
                 }
             }
             return
@@ -314,7 +314,7 @@ final class SyncCoordinator: ObservableObject {
         if !deletionChunks.isEmpty {
             for chunk in deletionChunks {
                 let payload = build([], chunk)
-                try enqueue(payload: payload, endpoint: endpoint)
+                try await enqueue(payload: payload, endpoint: endpoint)
             }
             return
         }
