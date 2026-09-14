@@ -6,6 +6,9 @@ final class SettingsStore: ObservableObject {
     @Published var serverURL: String {
         didSet { defaults.set(serverURL, forKey: Keys.serverURL) }
     }
+    @Published var apiToken: String {
+        didSet { defaults.set(apiToken, forKey: Keys.apiToken) }
+    }
     @Published var enableWorkouts: Bool {
         didSet { defaults.set(enableWorkouts, forKey: Keys.enableWorkouts) }
     }
@@ -31,7 +34,25 @@ final class SettingsStore: ObservableObject {
     private let defaults = UserDefaults.standard
 
     private init() {
-        serverURL = defaults.string(forKey: Keys.serverURL) ?? "http://192.168.1.41:8080"
+        let defaultServerURL = "https://api.bodywithoutorgans.cc/healthz"
+        let legacyServerURLs = Set(["http://192.168.1.41:8080", "http://192.168.1.149:8080"])
+        if let storedServerURL = defaults.string(forKey: Keys.serverURL)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !storedServerURL.isEmpty,
+           !legacyServerURLs.contains(storedServerURL) {
+            serverURL = storedServerURL
+        } else {
+            serverURL = defaultServerURL
+            defaults.set(defaultServerURL, forKey: Keys.serverURL)
+        }
+
+        let defaultToken = "bd0df0785875e2d54d98f738161f0717812dd3f2b53f74a4"
+        if let storedToken = defaults.string(forKey: Keys.apiToken)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !storedToken.isEmpty {
+            apiToken = storedToken
+        } else {
+            apiToken = defaultToken
+            defaults.set(defaultToken, forKey: Keys.apiToken)
+        }
         enableWorkouts = defaults.object(forKey: Keys.enableWorkouts) as? Bool ?? true
         enableSleep = defaults.object(forKey: Keys.enableSleep) as? Bool ?? true
         enableHRV = defaults.object(forKey: Keys.enableHRV) as? Bool ?? true
@@ -43,6 +64,7 @@ final class SettingsStore: ObservableObject {
 
     private enum Keys {
         static let serverURL = "serverURL"
+        static let apiToken = "apiToken"
         static let enableWorkouts = "enableWorkouts"
         static let enableSleep = "enableSleep"
         static let enableHRV = "enableHRV"

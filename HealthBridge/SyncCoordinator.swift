@@ -3,6 +3,13 @@ import HealthKit
 
 @MainActor
 final class SyncCoordinator: ObservableObject {
+    /// One instance for the whole app: the observer queries started at launch sync through this object, and the
+    /// UI observes the same one. A per-view instance would die with the view and take background delivery with it.
+    static let shared = SyncCoordinator()
+
+    private static var syncInProgress = false
+    private let maxPreferredMetricsRequestBytes = 12_000
+
     @Published var lastSync: Date?
     @Published var lastError: String?
     @Published var serverReachable: Bool = false
@@ -13,66 +20,114 @@ final class SyncCoordinator: ObservableObject {
     private let settings = SettingsStore.shared
     private let network = NetworkClient.shared
 
+    /// Called from the app delegate on every launch, foreground or background. No UI and no permission prompt
+    /// here: in a background relaunch there is nobody to answer one, and by then authorization is already granted.
+    func startBackgroundDelivery() async {
+        do {
+            try await healthKit.enableBackgroundDelivery()
+        } catch {
+            // Expected on the very first launch, before the user has granted access; the UI path retries.
+            Logger.shared.error("Background delivery not enabled yet: \(formatError(error))")
+        }
+        healthKit.startObserverQueries { completionHandler in
+            Task { @MainActor in
+                await self.syncNowCompletely()
+                // Only now is HealthKit told the update was handled.
+                completionHandler()
+            }
+        }
+    }
+
+    /// Called when the UI appears: asks for permission if needed, then makes sure background delivery is on.
     func bootstrap() async {
         await refreshQueueStatus()
         do {
             try await healthKit.requestAuthorization()
-            try await healthKit.enableBackgroundDelivery()
-            healthKit.startObserverQueries {
-                Task { @MainActor in
-                    await self.syncNow()
-                }
-            }
         } catch {
-            lastError = error.localizedDescription
+            lastError = formatError(error)
         }
+        await startBackgroundDelivery()
         await updateReachability()
     }
 
     func syncNow() async {
+        guard beginSyncIfAvailable() else {
+            Logger.shared.info("Sync skipped: another sync operation is already running.")
+            return
+        }
+        defer { endSync() }
+
         do {
             try await enqueueHealthData()
             try await flushQueue()
             lastSync = Date()
             lastError = nil
         } catch {
-            lastError = error.localizedDescription
+            lastError = formatError(error)
+        }
+        await refreshQueueStatus()
+        await updateReachability()
+    }
+
+    func syncNowCompletely() async {
+        guard beginSyncIfAvailable() else {
+            Logger.shared.info("Sync skipped: another sync operation is already running.")
+            return
+        }
+        defer { endSync() }
+
+        do {
+            try await enqueueHealthData()
+            try await flushQueueCompletely()
+            lastSync = Date()
+            lastError = nil
+        } catch {
+            lastError = formatError(error)
         }
         await refreshQueueStatus()
         await updateReachability()
     }
 
     func enqueueHealthData() async throws {
+        // Each anchor is advanced only after its batches are written to the on-disk queue: from that point the
+        // samples survive a crash and are retried forever, so it is safe to stop asking HealthKit for them.
         if settings.enableWorkouts {
             let workouts = try await healthKit.fetchWorkouts()
-            try enqueueWorkouts(workouts)
+            try enqueueWorkouts(items: workouts.items, deleted: workouts.deleted)
+            workouts.commit()
         }
         if settings.enableSleep {
             let sleep = try await healthKit.fetchSleep()
-            try enqueueSleep(sleep)
+            try enqueueSleep(items: sleep.items, deleted: sleep.deleted)
+            sleep.commit()
         }
-        let metricsEnabled = settings.enableHRV || settings.enableRestingHR || settings.enableSteps || settings.enableActiveEnergy
-        if metricsEnabled {
-            let metrics = try await healthKit.fetchMetrics()
-            let filtered = metrics.items.filter { payload in
-                switch payload.kind {
-                case .hrvSDNN: return settings.enableHRV
-                case .restingHeartRate: return settings.enableRestingHR
-                case .steps: return settings.enableSteps
-                case .activeEnergy: return settings.enableActiveEnergy
-                }
-            }
-            try enqueueMetrics(items: filtered, deleted: metrics.deleted)
+        if !enabledMetricKinds.isEmpty {
+            let metrics = try await healthKit.fetchMetrics(kinds: enabledMetricKinds)
+            try enqueueMetrics(items: metrics.items, deleted: metrics.deleted)
+            metrics.commit()
         }
+    }
+
+    private var enabledMetricKinds: Set<MetricKind> {
+        var kinds: Set<MetricKind> = []
+        if settings.enableHRV { kinds.insert(.hrvSDNN) }
+        if settings.enableRestingHR { kinds.insert(.restingHeartRate) }
+        if settings.enableSteps { kinds.insert(.steps) }
+        if settings.enableActiveEnergy { kinds.insert(.activeEnergy) }
+        return kinds
     }
 
     func flushQueue() async throws {
         await refreshQueueStatus()
-        let batch = queue.nextBatch(limit: 5)
+        // Process up to 50 items per flush to handle larger queues more efficiently
+        let batch = queue.nextBatch(limit: 50)
         guard !batch.isEmpty else { return }
         for item in batch {
             do {
-                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL)
+                if try splitOversizedMetricsRequestIfNeeded(item) {
+                    continue
+                }
+                try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken)
                 queue.markSent(item)
             } catch {
                 queue.markFailed(item)
@@ -81,10 +136,48 @@ final class SyncCoordinator: ObservableObject {
         }
     }
 
+    func flushQueueCompletely() async throws {
+        // Keep flushing until the queue is empty
+        var hasMore = true
+        // Splitting re-enqueues work instead of sending it, so a round can legitimately end with nothing sent —
+        // but only a handful of times, since each split halves the payload. Anything beyond that is a bug eating
+        // the loop, and hanging here would also leave `syncInProgress` set and block every later sync.
+        var roundsWithoutSend = 0
+        while hasMore {
+            await refreshQueueStatus()
+            let batch = queue.nextBatch(limit: 50)
+            guard !batch.isEmpty else {
+                hasMore = false
+                break
+            }
+            var sentSomething = false
+            for item in batch {
+                do {
+                    if try splitOversizedMetricsRequestIfNeeded(item) {
+                        continue
+                    }
+                    try await network.send(endpoint: item.endpoint, bodyData: item.bodyData, baseURL: settings.serverURL, authToken: settings.apiToken)
+                    queue.markSent(item)
+                    sentSomething = true
+                } catch {
+                    queue.markFailed(item)
+                    throw error
+                }
+            }
+            roundsWithoutSend = sentSomething ? 0 : roundsWithoutSend + 1
+            if roundsWithoutSend > 32 {
+                Logger.shared.error("Flush made no progress in \(roundsWithoutSend) rounds; giving up to avoid spinning.")
+                break
+            }
+        }
+    }
+
     func updateReachability() async {
         do {
-            serverReachable = try await network.healthCheck(baseURL: settings.serverURL)
+            serverReachable = try await network.healthCheck(baseURL: settings.serverURL, authToken: settings.apiToken)
         } catch {
+            // Swallowing this silently made "Server reachable: No" impossible to tell apart from a stale value.
+            Logger.shared.error("Health check failed: \(formatError(error))")
             serverReachable = false
         }
     }
@@ -103,25 +196,73 @@ final class SyncCoordinator: ObservableObject {
             try await flushQueue()
             lastSync = Date()
         } catch {
-            lastError = error.localizedDescription
+            lastError = formatError(error)
         }
         await refreshQueueStatus()
     }
 
-    private func enqueueWorkouts(_ payload: (items: [WorkoutPayload], deleted: [DeletionPayload])) throws {
-        try enqueueBatches(items: payload.items, deleted: payload.deleted, endpoint: "v1/ingest/health/workouts") { items, deleted in
+    private func formatError(_ error: Error) -> String {
+        if let networkError = error as? NetworkError {
+            return networkError.localizedDescription
+        }
+        if let urlError = error as? URLError {
+            return "Network error \(urlError.code.rawValue): \(urlError.localizedDescription)"
+        }
+        return error.localizedDescription
+    }
+
+    private func beginSyncIfAvailable() -> Bool {
+        guard !Self.syncInProgress else { return false }
+        Self.syncInProgress = true
+        return true
+    }
+
+    private func endSync() {
+        Self.syncInProgress = false
+    }
+
+    private func splitOversizedMetricsRequestIfNeeded(_ item: QueuedRequest) throws -> Bool {
+        guard item.endpoint == "v1/ingest/health/metrics", item.bodyData.count > maxPreferredMetricsRequestBytes else {
+            return false
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        guard let batch = try? decoder.decode(MetricsBatchPayload.self, from: item.bodyData) else {
+            Logger.shared.error("Failed to decode oversized metrics payload (\(item.bodyData.count) bytes). Sending as-is.")
+            return false
+        }
+
+        // Every split must strictly shrink the payload. Re-chunking at the size the batch already has hands back
+        // a byte-for-byte identical request, and the flush loop then splits it again forever: nothing is ever
+        // sent, the queue never drains and the sync never returns.
+        let unitCount = max(batch.items.count, batch.deleted.count)
+        guard unitCount > 1 else {
+            // A single sample that is still over the limit cannot be divided — send it and let the server judge.
+            return false
+        }
+        let chunkSize = max(1, unitCount / 2)
+
+        try enqueueMetrics(items: batch.items, deleted: batch.deleted, chunkSize: chunkSize)
+        queue.markSent(item)
+        Logger.shared.info("Split oversized metrics payload (\(item.bodyData.count) bytes, \(unitCount) units) into chunks of \(chunkSize).")
+        return true
+    }
+
+    private func enqueueWorkouts(items: [WorkoutPayload], deleted: [DeletionPayload]) throws {
+        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/workouts") { items, deleted in
             WorkoutsBatchPayload(items: items, deleted: deleted)
         }
     }
 
-    private func enqueueSleep(_ payload: (items: [SleepPayload], deleted: [DeletionPayload])) throws {
-        try enqueueBatches(items: payload.items, deleted: payload.deleted, endpoint: "v1/ingest/health/sleep") { items, deleted in
+    private func enqueueSleep(items: [SleepPayload], deleted: [DeletionPayload]) throws {
+        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/sleep") { items, deleted in
             SleepBatchPayload(items: items, deleted: deleted)
         }
     }
 
-    private func enqueueMetrics(items: [MetricPayload], deleted: [DeletionPayload]) throws {
-        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/metrics") { items, deleted in
+    private func enqueueMetrics(items: [MetricPayload], deleted: [DeletionPayload], chunkSize: Int = 50) throws {
+        try enqueueBatches(items: items, deleted: deleted, endpoint: "v1/ingest/health/metrics", chunkSize: chunkSize) { items, deleted in
             MetricsBatchPayload(items: items, deleted: deleted)
         }
     }
@@ -133,17 +274,41 @@ final class SyncCoordinator: ObservableObject {
         queue.enqueue(endpoint: endpoint, bodyData: data)
     }
 
-    private func enqueueBatches<Item, Payload: Encodable>(items: [Item], deleted: [DeletionPayload], endpoint: String, build: ([Item], [DeletionPayload]) -> Payload) throws {
-        let chunks = items.chunked(into: 200)
-        for (index, chunk) in chunks.enumerated() {
-            let deletions = index == 0 ? deleted : []
-            let payload = build(chunk, deletions)
-            try enqueue(payload: payload, endpoint: endpoint)
+    private func enqueueBatches<Item, Payload: Encodable>(
+        items: [Item],
+        deleted: [DeletionPayload],
+        endpoint: String,
+        chunkSize: Int = 200,
+        build: ([Item], [DeletionPayload]) -> Payload
+    ) throws {
+        let itemChunks = items.chunked(into: chunkSize)
+        let deletionChunks = deleted.chunked(into: chunkSize)
+
+        if !itemChunks.isEmpty {
+            for (index, chunk) in itemChunks.enumerated() {
+                let deletions = index < deletionChunks.count ? deletionChunks[index] : []
+                let payload = build(chunk, deletions)
+                try enqueue(payload: payload, endpoint: endpoint)
+            }
+
+            if deletionChunks.count > itemChunks.count {
+                for index in itemChunks.count..<deletionChunks.count {
+                    let payload = build([], deletionChunks[index])
+                    try enqueue(payload: payload, endpoint: endpoint)
+                }
+            }
+            return
         }
-        if items.isEmpty && !deleted.isEmpty {
-            let payload = build([], deleted)
-            try enqueue(payload: payload, endpoint: endpoint)
+
+        if !deletionChunks.isEmpty {
+            for chunk in deletionChunks {
+                let payload = build([], chunk)
+                try enqueue(payload: payload, endpoint: endpoint)
+            }
+            return
         }
+
+        // No items and no deletions -> nothing to enqueue.
     }
 }
 

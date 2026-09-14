@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var coordinator = SyncCoordinator()
+    @ObservedObject private var coordinator = SyncCoordinator.shared
 
     var body: some View {
         NavigationStack {
@@ -15,7 +15,7 @@ struct ContentView: View {
 
                 Section("Actions") {
                     Button("Sync now") {
-                        Task { await coordinator.syncNow() }
+                        Task { await coordinator.syncNowCompletely() }
                     }
 
                     if SettingsStore.shared.devMode {
@@ -35,10 +35,6 @@ struct ContentView: View {
         }
         .task {
             await coordinator.bootstrap()
-        }
-        .onAppear {
-            BackgroundScheduler.shared.register()
-            BackgroundScheduler.shared.schedule()
         }
     }
 

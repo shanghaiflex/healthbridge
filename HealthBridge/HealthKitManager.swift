@@ -1,11 +1,19 @@
 import Foundation
 import HealthKit
 
+/// What one anchored read produced, plus the closure that advances the anchor past it.
+struct FetchResult<Item> {
+    let items: [Item]
+    let deleted: [DeletionPayload]
+    let commit: () -> Void
+}
+
 final class HealthKitManager {
     static let shared = HealthKitManager()
 
     private let healthStore = HKHealthStore()
     private let anchorStore = AnchorStore()
+    private var observersStarted = false
 
     private init() {}
 
@@ -44,7 +52,15 @@ final class HealthKitManager {
         }
     }
 
-    func startObserverQueries(updateHandler: @escaping () -> Void) {
+    /// Starts the long-lived observer queries that let iOS wake the app on new HealthKit data.
+    /// Must run at launch (see AppDelegate) — when iOS relaunches us in the background there is no UI, so
+    /// anything hung off a SwiftUI view never runs and the update is dropped.
+    /// `onUpdate` receives HealthKit's completion handler and must call it once the samples are handled:
+    /// calling it early tells iOS the update was dealt with and it stops waking us as reliably.
+    func startObserverQueries(onUpdate: @escaping (@escaping () -> Void) -> Void) {
+        guard !observersStarted else { return }
+        observersStarted = true
+
         let sampleTypes: [HKSampleType] = [
             HKObjectType.workoutType(),
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
@@ -55,24 +71,19 @@ final class HealthKitManager {
         ].compactMap { $0 }
 
         for type in sampleTypes {
-            let query = observerQuery(for: type) {
-                updateHandler()
+            let query = HKObserverQuery(sampleType: type, predicate: nil) { _, completionHandler, error in
+                if let error {
+                    Logger.shared.error("Observer query error: \(error.localizedDescription)")
+                    completionHandler()
+                    return
+                }
+                onUpdate(completionHandler)
             }
             healthStore.execute(query)
         }
     }
 
-    func observerQuery(for sampleType: HKSampleType, updateHandler: @escaping () -> Void) -> HKObserverQuery {
-        return HKObserverQuery(sampleType: sampleType, predicate: nil) { _, completionHandler, error in
-            if let error {
-                Logger.shared.error("Observer query error: \(error.localizedDescription)")
-            }
-            updateHandler()
-            completionHandler()
-        }
-    }
-
-    func fetchWorkouts() async throws -> (items: [WorkoutPayload], deleted: [DeletionPayload]) {
+    func fetchWorkouts() async throws -> FetchResult<WorkoutPayload> {
         let type = HKObjectType.workoutType()
         let result = try await anchorStore.perform(sampleType: type, anchorKey: .workout)
         let workouts = result.samples.compactMap { $0 as? HKWorkout }.map { workout in
@@ -88,33 +99,37 @@ final class HealthKitManager {
             )
         }
         let deletions = result.deleted.map { DeletionPayload(id: $0.uuid.uuidString, sampleType: "workout") }
-        return (workouts, deletions)
+        return FetchResult(items: workouts, deleted: deletions, commit: result.commit)
     }
 
-    func fetchSleep() async throws -> (items: [SleepPayload], deleted: [DeletionPayload]) {
+    func fetchSleep() async throws -> FetchResult<SleepPayload> {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
-            return ([], [])
+            return FetchResult(items: [], deleted: [], commit: {})
         }
         let result = try await anchorStore.perform(sampleType: type, anchorKey: .sleep)
         let sleepSamples = result.samples.compactMap { $0 as? HKCategorySample }
         let payloads = SleepAssembler.assemble(samples: sleepSamples)
         let deletions = result.deleted.map { DeletionPayload(id: $0.uuid.uuidString, sampleType: "sleep") }
-        return (payloads, deletions)
+        return FetchResult(items: payloads, deleted: deletions, commit: result.commit)
     }
 
-    func fetchMetrics() async throws -> (items: [MetricPayload], deleted: [DeletionPayload]) {
+    /// Reads only the kinds the user has switched on. Reading a disabled kind would advance its anchor and the
+    /// samples would be dropped by the filter downstream — silently lost for good.
+    func fetchMetrics(kinds: Set<MetricKind>) async throws -> FetchResult<MetricPayload> {
         var items: [MetricPayload] = []
         var deletions: [DeletionPayload] = []
-        for metricType in MetricSampleType.allCases {
+        var commits: [() -> Void] = []
+        for metricType in MetricSampleType.allCases where kinds.contains(metricType.kind) {
             let result = try await fetchMetric(type: metricType)
             items.append(contentsOf: result.items)
             deletions.append(contentsOf: result.deleted)
+            commits.append(result.commit)
         }
-        return (items, deletions)
+        return FetchResult(items: items, deleted: deletions, commit: { commits.forEach { $0() } })
     }
 
-    private func fetchMetric(type metricType: MetricSampleType) async throws -> (items: [MetricPayload], deleted: [DeletionPayload]) {
-        guard let sampleType = metricType.hkType else { return ([], []) }
+    private func fetchMetric(type metricType: MetricSampleType) async throws -> FetchResult<MetricPayload> {
+        guard let sampleType = metricType.hkType else { return FetchResult(items: [], deleted: [], commit: {}) }
         let result = try await anchorStore.perform(sampleType: sampleType, anchorKey: metricType.anchorKey)
         let quantitySamples = result.samples.compactMap { $0 as? HKQuantitySample }
         let mapped = quantitySamples.map { sample in
@@ -129,7 +144,7 @@ final class HealthKitManager {
         }
         let deletionType = metricType.kind.rawValue
         let deletedPayload = result.deleted.map { DeletionPayload(id: $0.uuid.uuidString, sampleType: deletionType) }
-        return (mapped, deletedPayload)
+        return FetchResult(items: mapped, deleted: deletedPayload, commit: result.commit)
     }
 }
 

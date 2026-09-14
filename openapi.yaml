@@ -3,15 +3,12 @@ info:
   title: Health Bridge Ingest API
   version: 1.0.0
   description: |
-    Local LAN ingest API for Health Bridge iOS app. All endpoints accept JSON
-    payloads with HealthKit UUIDs for idempotency. Auth is disabled for MVP.
+    Ingest API for Health Bridge iOS app. All endpoints accept JSON
+    payloads with HealthKit UUIDs for idempotency.
 servers:
-  - url: http://{host}:{port}
-    variables:
-      host:
-        default: 192.168.1.149
-      port:
-        default: "8080"
+  - url: https://api.bodywithoutorgans.cc
+security:
+  - bearerAuth: []
 paths:
   /healthz:
     get:
@@ -56,6 +53,10 @@ paths:
         "200":
           description: OK
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
   schemas:
     Deletion:
       type: object

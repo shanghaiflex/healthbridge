@@ -14,6 +14,10 @@ final class AnchorStore {
     struct AnchorResult {
         let samples: [HKSample]
         let deleted: [HKDeletedObject]
+        /// Advances the stored anchor past these samples. Call it only once the samples are safely on their way
+        /// to the server (i.e. written to the on-disk queue) — HealthKit hands every sample exactly once, so an
+        /// anchor stored before delivery means anything lost in between is never offered again.
+        let commit: () -> Void
     }
 
     private let defaults = UserDefaults.standard
@@ -52,8 +56,11 @@ final class AnchorStore {
                     continuation.resume(throwing: error)
                     return
                 }
-                self.store(anchor: newAnchor, for: anchorKey)
-                continuation.resume(returning: AnchorResult(samples: samples ?? [], deleted: deleted ?? []))
+                continuation.resume(returning: AnchorResult(
+                    samples: samples ?? [],
+                    deleted: deleted ?? [],
+                    commit: { self.store(anchor: newAnchor, for: anchorKey) }
+                ))
             }
             self.healthStore.execute(query)
         }

@@ -31,8 +31,7 @@ final class BackgroundScheduler {
         BackgroundScheduler.shared.schedule()
         let operation = Task { @MainActor in
             let coordinator = SyncCoordinator()
-            await coordinator.syncNow()
-            await coordinator.refreshQueueStatus()
+            await coordinator.syncNowCompletely()
         }
         task.expirationHandler = {
             operation.cancel()

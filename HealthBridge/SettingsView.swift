@@ -8,6 +8,8 @@ struct SettingsView: View {
             Section("Server") {
                 TextField("Server URL", text: $settings.serverURL)
                     .serverTextFieldStyle()
+                SecureField("API Token", text: $settings.apiToken)
+                    .tokenTextFieldStyle()
             }
 
             Section("Data types") {
@@ -36,6 +38,17 @@ struct SettingsView: View {
 private extension View {
     @ViewBuilder
     func serverTextFieldStyle() -> some View {
+        #if os(iOS)
+        self
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+        #else
+        self
+        #endif
+    }
+
+    @ViewBuilder
+    func tokenTextFieldStyle() -> some View {
         #if os(iOS)
         self
             .textInputAutocapitalization(.never)
