@@ -105,13 +105,15 @@ final class HealthKitManager {
         return FetchResult(items: workouts, deleted: deletions, commit: result.commit)
     }
 
-    func fetchSleep() async throws -> FetchResult<SleepPayload> {
+    /// One page of sleep stages. Paged like the metrics: the stages of a single night are dozens of samples, and
+    /// the first read after the anchor changed covers a year of them — far more than one background launch can send.
+    func fetchSleepPage(limit: Int = HKObjectQueryNoLimit) async throws -> FetchResult<SleepPayload> {
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
             return FetchResult(items: [], deleted: [], commit: {})
         }
-        let result = try await anchorStore.perform(sampleType: type, anchorKey: .sleep)
+        let result = try await anchorStore.perform(sampleType: type, anchorKey: .sleep, limit: limit)
         let sleepSamples = result.samples.compactMap { $0 as? HKCategorySample }
-        let payloads = SleepAssembler.assemble(samples: sleepSamples)
+        let payloads = SleepAssembler.payloads(samples: sleepSamples)
         let deletions = result.deleted.map { DeletionPayload(id: $0.uuid.uuidString, sampleType: "sleep") }
         return FetchResult(items: payloads, deleted: deletions, commit: result.commit)
     }
@@ -232,6 +234,19 @@ private extension HKWorkoutActivityType {
         case .swimming: return "swimming"
         case .yoga: return "yoga"
         case .functionalStrengthTraining: return "functional_strength_training"
+        case .traditionalStrengthTraining: return "traditionalStrengthTraining"
+        case .coreTraining: return "coreTraining"
+        case .crossTraining: return "crossTraining"
+        case .highIntensityIntervalTraining: return "highIntensityIntervalTraining"
+        case .tennis: return "tennis"
+        case .tableTennis: return "tableTennis"
+        case .swimBikeRun: return "swimBikeRun"
+        case .mixedCardio: return "mixedCardio"
+        case .hiking: return "hiking"
+        case .elliptical: return "elliptical"
+        case .rowing: return "rowing"
+        case .pilates: return "pilates"
+        case .stairClimbing: return "stairClimbing"
         case .other: return "other"
         default: return String(describing: self)
         }

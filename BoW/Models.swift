@@ -18,19 +18,17 @@ struct WorkoutPayload: Codable, Identifiable {
     let averageHeartRate: Double?
 }
 
+/// One stretch of one stage of sleep, exactly as HealthKit holds it. Until 2026-09-14 the app added the stages up
+/// per calendar day and sent one summary with a fresh UUID: a re-sync stored the same night again (the server saw
+/// 20-hour nights), and a night that began before midnight was filed together with the next evening, so the two
+/// could no longer be told apart. The sample's own uuid is stable, so sending the stages raw is idempotent, and
+/// the server groups them into nights itself.
 struct SleepPayload: Codable, Identifiable {
     let id: String
+    let stage: String
     let start: Date
     let end: Date
-    let totalMinutes: Double
-    let breakdown: SleepBreakdown
-}
-
-struct SleepBreakdown: Codable {
-    let remMinutes: Double
-    let deepMinutes: Double
-    let coreMinutes: Double
-    let awakeMinutes: Double
+    let minutes: Double
 }
 
 struct MetricPayload: Codable, Identifiable {

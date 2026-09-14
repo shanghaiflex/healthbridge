@@ -108,6 +108,8 @@ final class SyncCoordinator: ObservableObject {
         await updateReachability()
     }
 
+    private let sleepPageSize = 2000
+
     func enqueueHealthData() async throws {
         // Each anchor is advanced only after its batches are written to the on-disk queue: from that point the
         // samples survive a crash and are retried forever, so it is safe to stop asking HealthKit for them.
@@ -117,9 +119,13 @@ final class SyncCoordinator: ObservableObject {
             workouts.commit()
         }
         if settings.enableSleep {
-            let sleep = try await healthKit.fetchSleep()
-            try await enqueueSleep(items: sleep.items, deleted: sleep.deleted)
-            sleep.commit()
+            while true {
+                let page = try await healthKit.fetchSleepPage(limit: sleepPageSize)
+                try await enqueueSleep(items: page.items, deleted: page.deleted)
+                page.commit()
+                if page.items.count + page.deleted.count < sleepPageSize { break }
+                try? await flushQueueCompletely()
+            }
         }
         // Metrics page by page (2000 samples), anchor committed after every page: a year of steps is far more
         // than one background launch can swallow at once, and an all-or-nothing read never finished.

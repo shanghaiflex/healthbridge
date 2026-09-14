@@ -3,7 +3,9 @@ import HealthKit
 
 enum AnchorKey: String {
     case workout
-    case sleep
+    /// Renamed with the move to raw stage samples (2026-09-14): an unknown key has no anchor, so the year of sleep
+    /// is read again in the new shape. The old summaries stay on the server until the nights they cover arrive.
+    case sleep = "sleepStages"
     case hrv
     case restingHR
     case steps

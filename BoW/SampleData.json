@@ -14,15 +14,38 @@
   "sleep": [
     {
       "id": "sample-sleep-1",
+      "stage": "core",
       "start": "2024-01-19T21:30:00Z",
+      "end": "2024-01-19T23:30:00Z",
+      "minutes": 120
+    },
+    {
+      "id": "sample-sleep-2",
+      "stage": "deep",
+      "start": "2024-01-19T23:30:00Z",
+      "end": "2024-01-20T00:50:00Z",
+      "minutes": 80
+    },
+    {
+      "id": "sample-sleep-3",
+      "stage": "rem",
+      "start": "2024-01-20T00:50:00Z",
+      "end": "2024-01-20T02:20:00Z",
+      "minutes": 90
+    },
+    {
+      "id": "sample-sleep-4",
+      "stage": "core",
+      "start": "2024-01-20T02:20:00Z",
+      "end": "2024-01-20T04:50:00Z",
+      "minutes": 150
+    },
+    {
+      "id": "sample-sleep-5",
+      "stage": "awake",
+      "start": "2024-01-20T04:50:00Z",
       "end": "2024-01-20T05:30:00Z",
-      "totalMinutes": 480,
-      "breakdown": {
-        "remMinutes": 90,
-        "deepMinutes": 80,
-        "coreMinutes": 270,
-        "awakeMinutes": 40
-      }
+      "minutes": 40
     }
   ],
   "metrics": [
