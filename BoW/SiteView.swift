@@ -134,10 +134,14 @@ extension SiteController: WKScriptMessageHandler, WKNavigationDelegate {
 
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         let text = error.localizedDescription
+        let url = MainActor.assumeIsolated { Self.siteURL?.absoluteString } ?? ""
         Task { @MainActor in
             self.loading = false
             self.refresh.endRefreshing()
             self.lastError = text
+            // Into the journal as well: a page that fails to load leaves nothing on the mini to look at, and the
+            // tab is simply empty — the reason has to travel with the next request that does get through.
+            ActivityLog.shared.log("Сайт не открылся", detail: "\(url): \(text)")
         }
     }
 }
