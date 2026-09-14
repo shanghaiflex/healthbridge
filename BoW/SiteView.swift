@@ -44,16 +44,23 @@ final class SiteController: NSObject, ObservableObject {
         return comps.url
     }
 
+    /// Always after the home-network probe: the tab used to load whatever address was current the instant it
+    /// appeared, which at launch is the internet one, and without a VPN that address does not answer.
     func loadIfNeeded() {
-        guard !loaded, let site = Self.siteURL else {
-            ActivityLog.shared.log("Сайт: не гружу", detail: loaded ? "уже загружен" : "адрес сайта не собрался")
-            return
-        }
+        guard !loaded else { return }
         loaded = true
-        ActivityLog.shared.log("Сайт: гружу", detail: site.absoluteString)
-        var comps = URLComponents(url: site.appendingPathComponent("app/login"), resolvingAgainstBaseURL: false)!
-        comps.queryItems = [URLQueryItem(name: "t", value: SettingsStore.shared.apiToken), URLQueryItem(name: "next", value: "/")]
-        webView.load(URLRequest(url: comps.url!))
+        Task { @MainActor in
+            await SettingsStore.shared.probeLAN()
+            guard let site = Self.siteURL else {
+                ActivityLog.shared.log("Сайт: не гружу", detail: "адрес сайта не собрался")
+                loaded = false
+                return
+            }
+            ActivityLog.shared.log("Сайт: гружу", detail: site.absoluteString)
+            var comps = URLComponents(url: site.appendingPathComponent("app/login"), resolvingAgainstBaseURL: false)!
+            comps.queryItems = [URLQueryItem(name: "t", value: SettingsStore.shared.apiToken), URLQueryItem(name: "next", value: "/")]
+            webView.load(URLRequest(url: comps.url!))
+        }
     }
 
     func reload() {
