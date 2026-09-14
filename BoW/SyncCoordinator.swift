@@ -49,6 +49,8 @@ final class SyncCoordinator: ObservableObject {
         }
         await startBackgroundDelivery()
         await updateReachability()
+        // Right after permission is granted nothing else would send for hours: do the first (full) sync now.
+        await syncNowCompletely(trigger: "first")
     }
 
     func syncNow(trigger: String = "manual") async {

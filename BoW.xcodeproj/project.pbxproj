@@ -35,6 +35,8 @@
 		E3A9D78722F5873016DBD988 /* PlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59632C789445018284D76582 /* PlayerEngine.swift */; };
 		89990B316B0C6C086D11F5E2 /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FD22A4A900BC8D5432EDACB /* PreviewData.swift */; };
 		1C13CBDB4AB9C06756933D61 /* LecturesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BF5870E86DBCC41357B7593 /* LecturesView.swift */; };
+		8844B5E1CA253BFBB87BD160 /* SiteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F52B2B7C073F78EBCCBD309A /* SiteView.swift */; };
+		E49EA2B4C8EBCDE80229E45F /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0670F5DE1C134B54675C5E2C /* AppState.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +72,8 @@
 		59632C789445018284D76582 /* PlayerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerEngine.swift; sourceTree = "<group>"; };
 		9FD22A4A900BC8D5432EDACB /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
 		3BF5870E86DBCC41357B7593 /* LecturesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LecturesView.swift; sourceTree = "<group>"; };
+		F52B2B7C073F78EBCCBD309A /* SiteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiteView.swift; sourceTree = "<group>"; };
+		0670F5DE1C134B54675C5E2C /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +116,8 @@
 			isa = PBXGroup;
 			children = (
 				01A08C7D2B93D6C5008F2D28 /* BoWApp.swift */,
+				0670F5DE1C134B54675C5E2C /* AppState.swift */,
+				F52B2B7C073F78EBCCBD309A /* SiteView.swift */,
 				7435F2DF2B5409138A3F4968 /* RootView.swift */,
 				593E91F428F9E977D56B3BDD /* Theme.swift */,
 				A82FAC9CBE3265C1C1E4BC23 /* ActivityLog.swift */,
@@ -252,6 +258,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				01A08C8D2B93D6C5008F2D28 /* BoWApp.swift in Sources */,
+				E49EA2B4C8EBCDE80229E45F /* AppState.swift in Sources */,
+				8844B5E1CA253BFBB87BD160 /* SiteView.swift in Sources */,
 				4453AD536B1059974883861C /* RootView.swift in Sources */,
 				CCA9F55FC15B93E50ECCD28D /* Theme.swift in Sources */,
 				D974E14C4F819502DD46A575 /* ActivityLog.swift in Sources */,
