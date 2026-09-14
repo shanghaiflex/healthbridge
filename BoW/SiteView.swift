@@ -45,8 +45,12 @@ final class SiteController: NSObject, ObservableObject {
     }
 
     func loadIfNeeded() {
-        guard !loaded, let site = Self.siteURL else { return }
+        guard !loaded, let site = Self.siteURL else {
+            ActivityLog.shared.log("Сайт: не гружу", detail: loaded ? "уже загружен" : "адрес сайта не собрался")
+            return
+        }
         loaded = true
+        ActivityLog.shared.log("Сайт: гружу", detail: site.absoluteString)
         var comps = URLComponents(url: site.appendingPathComponent("app/login"), resolvingAgainstBaseURL: false)!
         comps.queryItems = [URLQueryItem(name: "t", value: SettingsStore.shared.apiToken), URLQueryItem(name: "next", value: "/")]
         webView.load(URLRequest(url: comps.url!))

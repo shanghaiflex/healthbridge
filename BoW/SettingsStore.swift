@@ -21,16 +21,34 @@ final class SettingsStore: ObservableObject {
     var baseURL: String { lanReachable && !lanURL.trimmingCharacters(in: .whitespaces).isEmpty ? lanURL : serverURL }
     var routeName: String { lanReachable ? "домашняя сеть" : "интернет" }
 
-    /// One quick look at the LAN address (1.5 s); the answer is reused for a minute.
+    /// One quick look at the LAN address (1.5 s); the answer is reused for a minute. Callers that arrive while a
+    /// probe is in flight wait for its answer instead of walking away with the previous one: a launch starts the
+    /// sync, the lecture list and the site at once, and the stamp used to be written before the request was even
+    /// sent — so everyone but the first caller read `lanReachable = false` and went out to the internet. Without a
+    /// VPN that address does not answer, which is how the site tab came up empty on the home network.
+    private var probeTask: Task<Void, Never>?
+
     @MainActor
     func probeLAN(force: Bool = false) async {
+        if let task = probeTask {
+            await task.value
+            return
+        }
+        if !force, let t = lanProbedAt, Date().timeIntervalSince(t) < 60 { return }
+        let task = Task { @MainActor in await self.runProbeLAN() }
+        probeTask = task
+        await task.value
+        probeTask = nil
+        lanProbedAt = Date()
+    }
+
+    @MainActor
+    private func runProbeLAN() async {
         let lan = lanURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !lan.isEmpty, let url = NetworkClient.shared.absoluteURL(path: "healthz", baseURL: lan) else {
             lanReachable = false
             return
         }
-        if !force, let t = lanProbedAt, Date().timeIntervalSince(t) < 60 { return }
-        lanProbedAt = Date()
         var request = URLRequest(url: url)
         request.timeoutInterval = 1.5
         request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
