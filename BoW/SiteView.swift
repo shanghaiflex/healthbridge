@@ -282,8 +282,9 @@ struct SiteView: View {
     var body: some View {
         ZStack {
             Theme.bg.ignoresSafeArea()
+            // Без таб-бара страница шла до самого низа экрана; с ним низ листа с кнопками («Готово» во
+            // французском) оказывался под баром и не нажимался. Вебвью кончается там, где начинается бар.
             SiteWebView(controller: site)
-                .ignoresSafeArea(edges: .bottom)
             if site.loading {
                 VStack {
                     ProgressView().tint(Theme.text2).padding(.top, 8)

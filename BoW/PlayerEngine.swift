@@ -21,6 +21,15 @@ final class PlayerEngine: ObservableObject {
         }
     }
 
+    /// Лекции записаны тихо, а громкость AVPlayer выше системной не поднимается. `AVAudioMix` — это усиление
+    /// самой дорожки, и значения больше 1 её действительно вытягивают.
+    @Published var gain: Float {
+        didSet {
+            UserDefaults.standard.set(gain, forKey: "playbackGain")
+            if let item = player?.currentItem { applyGain(to: item) }
+        }
+    }
+
     private var player: AVPlayer?
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
@@ -32,10 +41,13 @@ final class PlayerEngine: ObservableObject {
     private init() {
         let saved = UserDefaults.standard.float(forKey: "playbackRate")
         rate = saved > 0 ? saved : 1.0
+        let loud = UserDefaults.standard.float(forKey: "playbackGain")
+        gain = loud > 0 ? loud : 1.0
     }
 
     init(preview lecture: Lecture, time: Double, playing: Bool) {
         rate = 1.0
+        gain = 1.0
         current = lecture
         self.time = time
         duration = Double(lecture.duration)
@@ -106,6 +118,7 @@ final class PlayerEngine: ObservableObject {
         tearDown()
 
         let item = AVPlayerItem(url: file)
+        applyGain(to: item)
         let p = AVPlayer(playerItem: item)
         p.automaticallyWaitsToMinimizeStalling = false
         player = p
@@ -130,6 +143,21 @@ final class PlayerEngine: ObservableObject {
         }
         ActivityLog.shared.log("Играет", detail: "\(lecture.title) с \(Fmt.clock(start))")
         resume()
+    }
+
+    /// The track has to be loaded before it can be given a volume, and the asset is a local file, so this is
+    /// a hop through the task queue rather than a wait.
+    private func applyGain(to item: AVPlayerItem) {
+        let wanted = gain
+        guard wanted != 1 else { item.audioMix = nil; return }
+        Task { @MainActor in
+            guard let track = try? await item.asset.loadTracks(withMediaType: .audio).first else { return }
+            let params = AVMutableAudioMixInputParameters(track: track)
+            params.setVolume(wanted, at: .zero)
+            let mix = AVMutableAudioMix()
+            mix.inputParameters = [params]
+            item.audioMix = mix
+        }
     }
 
     func resume() {

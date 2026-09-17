@@ -148,9 +148,20 @@ struct HeroCard: View {
 
                 HStack {
                     Menu {
-                        ForEach([1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { r in
-                            Button { player.rate = Float(r) } label: {
-                                if player.rate == Float(r) { Label(rateLabel(r), systemImage: "checkmark") } else { Text(rateLabel(r)) }
+                        Section("Скорость") {
+                            ForEach([1.0, 1.25, 1.5, 1.75, 2.0], id: \.self) { r in
+                                Button { player.rate = Float(r) } label: {
+                                    if player.rate == Float(r) { Label(rateLabel(r), systemImage: "checkmark") } else { Text(rateLabel(r)) }
+                                }
+                            }
+                        }
+                        // Лекции записаны тихо, и на системной громкости их не всегда слышно: усиление живёт
+                        // здесь же, рядом со скоростью, — замечаешь это как раз пока слушаешь.
+                        Section("Громкость") {
+                            ForEach([1.0, 1.5, 2.0, 2.5], id: \.self) { g in
+                                Button { player.gain = Float(g) } label: {
+                                    if player.gain == Float(g) { Label(gainLabel(g), systemImage: "checkmark") } else { Text(gainLabel(g)) }
+                                }
                             }
                         }
                     } label: {
@@ -201,6 +212,10 @@ struct HeroCard: View {
 
     private func rateLabel(_ r: Double) -> String {
         r == r.rounded() ? "\(Int(r))×" : String(format: "%.2g×", r)
+    }
+
+    private func gainLabel(_ g: Double) -> String {
+        g == 1 ? "Как есть" : "Громче " + (g == g.rounded() ? "\(Int(g))×" : String(format: "%.2g×", g))
     }
 }
 
