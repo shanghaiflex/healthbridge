@@ -5,21 +5,23 @@ struct HealthView: View {
     @ObservedObject private var log = ActivityLog.shared
     @State private var syncing = false
 
+    /// Pushed from «Ещё», so the navigation stack is the one that pushed it: this screen is the app's own
+    /// plumbing (what went to the mini, what iOS did in the background), not the site's Well-being page.
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    statusCard
-                    backgroundCard
-                    journalCard
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+        ScrollView {
+            VStack(spacing: 16) {
+                statusCard
+                backgroundCard
+                journalCard
             }
-            .background(Theme.bg.ignoresSafeArea())
-            .navigationTitle("Здоровье")
-            .toolbarBackground(.hidden, for: .navigationBar)
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
         }
+        .background(Theme.bg.ignoresSafeArea())
+        .navigationTitle("Синк и журнал")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 
     private var statusCard: some View {
@@ -109,5 +111,8 @@ struct HealthView: View {
 }
 
 #Preview {
-    HealthView().preferredColorScheme(.dark)
+    NavigationStack {
+        HealthView()
+    }
+    .preferredColorScheme(.dark)
 }

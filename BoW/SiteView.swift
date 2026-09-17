@@ -6,28 +6,65 @@ import WebKit
 /// downloaded lectures to the native player instead of playing them itself.
 @MainActor
 final class SiteController: NSObject, ObservableObject {
-    /// The whole site, first tab.
-    static let shared = SiteController(path: "/", tab: "site")
-    /// The smart-home page as its own tab: the same page as on the site, the site hides its menu for it.
-    static let home = SiteController(path: "/home.html", tab: "home")
+    /// A page of the site with its own place in the app: a tab at the bottom, or a row in «Ещё».
+    /// `id` is what the page itself sees as `window.BoW.tab`; inside the app the site hides its own menu.
+    struct Page: Hashable, Identifiable {
+        let id: String
+        let path: String
+        let title: String
+        let icon: String
+    }
+
+    static let main = Page(id: "site", path: "/", title: "Главная", icon: "house")
+    static let mixesPage = Page(id: "mixes", path: "/mixes.html", title: "Миксы", icon: "music.note")
+    static let homePage = Page(id: "home", path: "/home.html", title: "Дом", icon: "lamp.desk")
+    /// The rest of the site, behind «Ещё»: the bottom bar shows five tabs and no more, and a sixth would send
+    /// the others into a system «More» list we neither order nor style. «Еда» (pantry.html) is deliberately
+    /// nowhere in the app — no tab, no row.
+    static let others: [Page] = [
+        Page(id: "french", path: "/french.html", title: "Французский", icon: "character.bubble"),
+        Page(id: "films", path: "/films.html", title: "Фильмы", icon: "film"),
+        Page(id: "books", path: "/books.html", title: "Книги", icon: "books.vertical"),
+        Page(id: "reads", path: "/reads.html", title: "Почитать", icon: "doc.richtext"),
+        Page(id: "health", path: "/health.html", title: "Well-being", icon: "heart.text.square"),
+    ]
     static let handlerName = "bow"
 
-    let path: String
-    let tab: String
+    private static var live: [String: SiteController] = [:]
+
+    /// The controller of a page, made on its first visit. A web view per page, all built at launch, is memory
+    /// spent on pages nobody opened — and each one would load the site behind the user's back.
+    static func controller(for page: Page) -> SiteController {
+        if let existing = live[page.id] { return existing }
+        let made = SiteController(page: page)
+        live[page.id] = made
+        return made
+    }
+
+    /// The first tab, the one the rest of the app talks to.
+    static var shared: SiteController { controller(for: main) }
+
+    /// Which lectures are on the phone goes to every page that is open: `lectures.html` can be in any tab.
+    static func pushDownloadedEverywhere() { live.values.forEach { $0.pushDownloaded() } }
+
+    /// Back to the foreground: every page ever opened may need a reload (see `resume`).
+    static func resumeAll() { live.values.forEach { $0.resume() } }
+
+    let page: Page
+    var path: String { page.path }
     let webView: WKWebView
     @Published private(set) var loaded = false
     @Published private(set) var loading = false
     @Published private(set) var lastError: String?
     private let refresh = UIRefreshControl()
 
-    private init(path: String, tab: String) {
-        self.path = path
-        self.tab = tab
+    private init(page: Page) {
+        self.page = page
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
         config.applicationNameForUserAgent = "BoW/2"
-        let bridge = WKUserScript(source: "window.BoW = { app: 2, downloaded: [], tab: '\(tab)' };", injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        let bridge = WKUserScript(source: "window.BoW = { app: 2, downloaded: [], tab: '\(page.id)' };", injectionTime: .atDocumentStart, forMainFrameOnly: true)
         config.userContentController.addUserScript(bridge)
         webView = WKWebView(frame: .zero, configuration: config)
         webView.allowsBackForwardNavigationGestures = true
@@ -170,10 +207,24 @@ struct SiteWebView: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 }
 
+/// A page of the site as a tab (or a row of «Ещё»): its controller — and with it the web view — appears on the
+/// first visit. Resolving it inside a plain `body` would build one for every tab the moment the TabView is laid
+/// out, which is the whole site loaded at launch.
+struct SitePage: View {
+    let page: SiteController.Page
+    @State private var site: SiteController?
+
+    var body: some View {
+        ZStack {
+            Theme.bg.ignoresSafeArea()
+            if let site { SiteView(site: site) }
+        }
+        .onAppear { if site == nil { site = SiteController.controller(for: page) } }
+    }
+}
+
 struct SiteView: View {
     @ObservedObject var site: SiteController
-
-    init(site: SiteController = .shared) { self.site = site }
 
     var body: some View {
         ZStack {

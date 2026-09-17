@@ -11,7 +11,13 @@ Private SwiftUI app, two jobs:
 2. **Здоровье** — the old Health Bridge: HealthKit → `POST /v1/ingest/health/<workouts|sleep|metrics>` with a
    bearer token, anchored queries, on-disk retry queue, background delivery via `HKObserverQuery`
    + `BGTaskScheduler`. Every request carries `X-Trigger` (foreground / healthkit:<type> / bg-refresh / manual)
-   so the server log shows what woke the app. The «Здоровье» tab has a journal of launches, syncs and downloads.
+   so the server log shows what woke the app. «Ещё» → «Синк и журнал» has a journal of launches, syncs and downloads.
+3. **Сайт** — bodywithoutorgans.cc сам, по вебвью на страницу. Внизу пять табов (iOS больше не показывает,
+   шестой уносит в своё «More»): «Главная», «Лекции», «Миксы», «Дом», «Ещё»; в «Ещё» — «Французский», «Фильмы»,
+   «Книги», «Почитать», «Well-being» и два своих экрана, «Синк и журнал» и «Настройки». «Еда» в приложении
+   не показывается вовсе. Страницы перечислены в `SiteController.Page`, вебвью создаётся на первом заходе
+   (`SitePage`) и дальше живёт, так что позиция в миксах переживает переключение табов. Меню сайта внутри
+   приложения скрыто (`app.js` на сайте): у каждой страницы свой таб.
 
 ## Build & install (no App Store, personal team)
 ```
@@ -29,5 +35,6 @@ Icon: `swift tools/icon.swift BoW/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 - `BoWApp.swift` — entry; the AppDelegate does everything a background launch needs (BG tasks, HealthKit observers, audio session, background-session reconnect).
 - `LectureStore` / `DownloadManager` / `PlayerEngine` — the lectures side. `LecturesView` is the screen, `PreviewData` feeds the `#Preview`s.
 - `SyncCoordinator` / `HealthKitManager` / `AnchorStore` / `QueueManager` / `NetworkClient` — the health side.
+- `RootView` / `MoreView` / `SiteView` — табы, «Ещё» и страницы сайта в вебвью.
 - `ActivityLog` — persisted journal shown in the app.
 - `openapi.yaml` — the ingest API.

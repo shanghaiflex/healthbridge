@@ -77,7 +77,7 @@ final class LectureStore: ObservableObject {
                 DownloadManager.shared.start(lecture)
             }
             prune()
-            SiteController.shared.pushDownloaded()
+            SiteController.pushDownloadedEverywhere()
         } catch {
             lastError = describe(error)
             ActivityLog.shared.log("Список лекций не получен (\(trigger))", detail: lastError)
@@ -107,7 +107,7 @@ final class LectureStore: ObservableObject {
     nonisolated func downloadFinished(_ id: String) async {
         await MainActor.run {
             objectWillChange.send()
-            SiteController.shared.pushDownloaded()
+            SiteController.pushDownloadedEverywhere()
         }
     }
 

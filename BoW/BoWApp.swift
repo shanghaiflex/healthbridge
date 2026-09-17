@@ -15,8 +15,7 @@ struct BoWApp: App {
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
-                SiteController.shared.resume()
-                SiteController.home.resume()
+                SiteController.resumeAll()
                 Task { await LectureStore.shared.refresh(trigger: "foreground") }
                 Task { await SyncCoordinator.shared.syncNowCompletely(trigger: "foreground") }
             case .background:
