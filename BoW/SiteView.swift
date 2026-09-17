@@ -201,10 +201,63 @@ extension SiteController: WKScriptMessageHandler, WKNavigationDelegate {
     }
 }
 
+/// WebKit pauses everything a web view was playing the moment that view leaves the window — so tapping another
+/// tab stopped the mix. The tab therefore holds a box, and the web view is only lent to it: while the tab is off
+/// screen the box parks the web view in the window itself (behind everything, all but transparent, its own size
+/// untouched so the page never relayouts) and takes it back when the tab comes round again.
+final class SiteBox: UIView {
+    private let web: WKWebView
+
+    init(web: WKWebView) {
+        self.web = web
+        super.init(frame: .zero)
+        backgroundColor = Theme.bgUI
+    }
+
+    @available(*, unavailable) required init?(coder: NSCoder) { fatalError("not from a storyboard") }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil {
+            if web.superview !== self { addSubview(web) }
+            setNeedsLayout()
+        } else if web.superview === self {
+            // Only when we are the one holding it: the same page pushed twice would otherwise steal it back.
+            SiteParking.park(web)
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if web.superview === self { web.frame = bounds }
+    }
+}
+
+/// The window-sized nowhere where web views wait out the tabs they are not showing in.
+@MainActor
+enum SiteParking {
+    private static var lot: UIView?
+
+    static func park(_ web: WKWebView) {
+        guard let window = lot?.window ?? UIApplication.shared.connectedScenes
+            .compactMap({ ($0 as? UIWindowScene)?.keyWindow }).first else { return }
+        if lot?.window !== window {
+            let made = UIView(frame: window.bounds)
+            made.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            made.clipsToBounds = true
+            made.alpha = 0.01
+            made.isUserInteractionEnabled = false
+            window.insertSubview(made, at: 0)
+            lot = made
+        }
+        lot?.addSubview(web)
+    }
+}
+
 struct SiteWebView: UIViewRepresentable {
     let controller: SiteController
-    func makeUIView(context: Context) -> WKWebView { controller.webView }
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func makeUIView(context: Context) -> SiteBox { SiteBox(web: controller.webView) }
+    func updateUIView(_ box: SiteBox, context: Context) {}
 }
 
 /// A page of the site as a tab (or a row of «Ещё»): its controller — and with it the web view — appears on the
