@@ -8,7 +8,8 @@ import UserNotifications
 ///
 /// Что показывать, решает сервер (`GET /api/updates`, scripts/notify.py): он же следит, чтобы ночная
 /// заметка не звонила и чтобы советы, приходящие четырьмя заходами, стали одной сводкой. Телефон помнит
-/// только id того, что уже показал.
+/// только id того, что уже показал: свежесть — забота сервера (заметка не старше трёх часов, сводка —
+/// сегодняшняя), поэтому после переустановки телефон в худшем случае повторит то, что и так актуально.
 @MainActor
 final class Notifier: ObservableObject {
     static let shared = Notifier()
@@ -25,7 +26,6 @@ final class Notifier: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private let seenKey = "notifiedIds"
-    private let primedKey = "notifierPrimed"
     private let settings = SettingsStore.shared
     private let network = NetworkClient.shared
     /// Синк дёргается на каждое движение HealthKit; чаще раза в две минуты спрашивать нечего.
@@ -57,11 +57,6 @@ final class Notifier: ObservableObject {
             seen.append(contentsOf: fresh.map(\.id))
             if seen.count > 50 { seen.removeFirst(seen.count - 50) }
             defaults.set(seen, forKey: seenKey)
-            // Первый запуск (или новая установка): то, что уже лежало на сервере, — не новость, а фон.
-            guard defaults.bool(forKey: primedKey) else {
-                defaults.set(true, forKey: primedKey)
-                return
-            }
             for item in fresh { await post(item) }
             ActivityLog.shared.log("Уведомление (\(trigger))", detail: fresh.map(\.title).joined(separator: ", "))
         } catch {
