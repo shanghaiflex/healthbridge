@@ -33,7 +33,7 @@ struct LecturesView: View {
                 .font(.system(size: 40, weight: .light))
                 .foregroundStyle(Theme.text2)
             Text(store.lastError == nil ? "Пока ничего не скачано" : "Нет связи с сервером")
-                .font(.headline)
+                .font(Theme.display(20, weight: .semibold))
             Text("Список берётся с bodywithoutorgans.cc: то, что слушаешь, и следующее из очереди. Потяни вниз, чтобы обновить.")
                 .font(.footnote)
                 .foregroundStyle(Theme.text2)
@@ -48,9 +48,7 @@ struct LecturesView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("На телефоне")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Theme.text2)
-                    .textCase(.uppercase)
+                    .sectionLabel()
                 Spacer()
                 Text("\(store.downloadedCount) из \(store.items.count)")
                     .font(.footnote)
@@ -111,11 +109,13 @@ struct HeroCard: View {
                 LinearGradient(colors: [.clear, .black.opacity(0.35), .black.opacity(0.92)], startPoint: .top, endPoint: .bottom)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(lecture.subtitle)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.white.opacity(0.75))
                         .lineLimit(1)
                     Text(lecture.title)
-                        .font(.title3.weight(.semibold))
+                        .font(Theme.display(22, weight: .semibold))
                         .foregroundStyle(.white)
                         .lineLimit(3)
                         .minimumScaleFactor(0.85)
@@ -168,7 +168,7 @@ struct HeroCard: View {
                         Text(rateLabel(Double(player.rate)))
                             .font(.subheadline.weight(.semibold).monospacedDigit())
                             .frame(width: 52, height: 36)
-                            .background(Theme.surface2, in: Capsule())
+                            .background(Theme.surface2)
                     }
                     Spacer()
                     Button { player.skip(by: -15) } label: { Image(systemName: "gobackward.15").font(.title2) }
@@ -194,7 +194,7 @@ struct HeroCard: View {
                         Image(systemName: "checkmark")
                             .font(.subheadline.weight(.semibold))
                             .frame(width: 52, height: 36)
-                            .background(Theme.surface2, in: Capsule())
+                            .background(Theme.surface2)
                     }
                     .disabled(!downloaded)
                 }
@@ -207,7 +207,6 @@ struct HeroCard: View {
             .padding(16)
         }
         .card()
-        .clipShape(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
     }
 
     private func rateLabel(_ r: Double) -> String {
@@ -242,14 +241,14 @@ struct LectureRow: View {
                 ZStack {
                     Artwork(url: lecture.artwork, square: lecture.source == "soundcloud")
                         .frame(width: 60, height: 60)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .clipShape(Rectangle())
                     if isCurrent && player.isPlaying {
-                        RoundedRectangle(cornerRadius: 10, style: .continuous).fill(.black.opacity(0.45))
+                        Rectangle().fill(.black.opacity(0.45))
                         Image(systemName: "waveform").foregroundStyle(.white).symbolEffect(.variableColor.iterative, isActive: true)
                     }
                 }
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(lecture.title).font(.subheadline.weight(.medium)).lineLimit(2).foregroundStyle(.white)
+                    Text(lecture.title).font(Theme.display(16, weight: .medium)).lineLimit(2).foregroundStyle(.white)
                     Text(lecture.subtitle).font(.caption).foregroundStyle(Theme.text2).lineLimit(1)
                     HStack(spacing: 6) {
                         if progress > 0 {

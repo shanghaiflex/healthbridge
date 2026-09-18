@@ -1,34 +1,91 @@
 import SwiftUI
 
-/// The site's warm palette (theme.css on bodywithoutorgans.cc, dark half): warm charcoal ground, two warm
-/// surfaces, terracotta accent, sage for «ok». Values are the same hex numbers as in theme.css.
+/// Журнальная палитра сайта (theme.css на bodywithoutorgans.cc, тёмная половина, 18.09.2026): чёрная
+/// бумага, киноварь вместо терракоты, волосяные линейки вместо теней. Цифры — те же hex, что в theme.css,
+/// чтобы вебвью и родные экраны не расходились: приложение — это пять табов вокруг того же сайта.
 enum Theme {
-    static let bg = Color(red: 0.086, green: 0.082, blue: 0.075)         // #161513
-    static let surface = Color(red: 0.125, green: 0.118, blue: 0.106)    // #201e1b
-    static let surface2 = Color(red: 0.165, green: 0.153, blue: 0.137)   // #2a2723
-    static let text = Color(red: 0.937, green: 0.91, blue: 0.863)        // #efe8dc
-    static let text2 = Color(red: 0.651, green: 0.616, blue: 0.561)      // #a69d8f
-    static let text3 = Color(red: 0.435, green: 0.408, blue: 0.369)      // #6f685e
-    static let accent = Color(red: 0.878, green: 0.498, blue: 0.341)     // #e07f57 terracotta
-    static let ok = Color(red: 0.576, green: 0.635, blue: 0.518)         // #93a284 sage
-    static let warn = Color(red: 0.941, green: 0.627, blue: 0.439)       // #f0a070
-    static let line = Color(red: 1.0, green: 0.94, blue: 0.86).opacity(0.09)
-    static let radius: CGFloat = 18
+    static let bg = Color(red: 0.075, green: 0.071, blue: 0.063)         // #131210
+    static let surface = Color(red: 0.106, green: 0.098, blue: 0.086)    // #1b1916
+    static let surface2 = Color(red: 0.149, green: 0.137, blue: 0.118)   // #26231e
+    static let text = Color(red: 0.953, green: 0.941, blue: 0.910)       // #f3f0e8
+    static let text2 = Color(red: 0.647, green: 0.627, blue: 0.600)      // #a5a099
+    static let text3 = Color(red: 0.447, green: 0.424, blue: 0.388)      // #726c63
+    static let accent = Color(red: 0.890, green: 0.376, blue: 0.302)     // #e3604d киноварь
+    static let ok = Color(red: 0.541, green: 0.718, blue: 0.624)         // #8ab79f
+    static let warn = Color(red: 0.847, green: 0.647, blue: 0.282)       // #d8a548
+    static let line = Color(red: 0.953, green: 0.941, blue: 0.910).opacity(0.16)
+    /// Прямой угол: бумага режется ровно — как карточки на сайте после журнальной перекраски.
+    static let radius: CGFloat = 0
 
-    static let bgUI = UIColor(red: 0.086, green: 0.082, blue: 0.075, alpha: 1)
-    static let text2UI = UIColor(red: 0.651, green: 0.616, blue: 0.561, alpha: 1)
+    static let bgUI = UIColor(red: 0.075, green: 0.071, blue: 0.063, alpha: 1)
+    static let text2UI = UIColor(red: 0.647, green: 0.627, blue: 0.600, alpha: 1)
+    static let text3UI = UIColor(red: 0.447, green: 0.424, blue: 0.388, alpha: 1)
+    static let textUI = UIColor(red: 0.953, green: 0.941, blue: 0.910, alpha: 1)
+    static let accentUI = UIColor(red: 0.890, green: 0.376, blue: 0.302, alpha: 1)
+
+    /// Антиква для заголовков. Своего Playfair в приложении нет и не нужно: системная New York — тот же
+    /// журнальный рисунок с засечками, приезжает с iOS и умеет динамический кегль.
+    static func display(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .serif)
+    }
+
+    static func displayUI(_ size: CGFloat, weight: UIFont.Weight = .regular) -> UIFont {
+        let base = UIFont.systemFont(ofSize: size, weight: weight)
+        guard let descriptor = base.fontDescriptor.withDesign(.serif) else { return base }
+        return UIFont(descriptor: descriptor, size: size)
+    }
+
+    /// Заголовки навигации — антиквой, таб-бар — с разрядкой и волосяной линейкой сверху: в журнале
+    /// рубрики набраны именно так. Вызывается один раз при запуске.
+    static func configureAppearance() {
+        let nav = UINavigationBarAppearance()
+        nav.configureWithTransparentBackground()
+        nav.titleTextAttributes = [.font: displayUI(17, weight: .semibold), .foregroundColor: textUI]
+        nav.largeTitleTextAttributes = [.font: displayUI(34), .foregroundColor: textUI]
+        UINavigationBar.appearance().standardAppearance = nav
+        UINavigationBar.appearance().compactAppearance = nav
+        UINavigationBar.appearance().scrollEdgeAppearance = nav
+
+        let tab = UITabBarAppearance()
+        tab.configureWithOpaqueBackground()
+        tab.backgroundColor = bgUI
+        tab.shadowColor = UIColor(red: 0.953, green: 0.941, blue: 0.910, alpha: 0.22)
+        for layout in [tab.stackedLayoutAppearance, tab.inlineLayoutAppearance, tab.compactInlineLayoutAppearance] {
+            layout.normal.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .medium),
+                                                 .kern: 0.6, .foregroundColor: text3UI]
+            layout.selected.titleTextAttributes = [.font: UIFont.systemFont(ofSize: 10, weight: .medium),
+                                                   .kern: 0.6, .foregroundColor: accentUI]
+            layout.normal.iconColor = text3UI
+            layout.selected.iconColor = accentUI
+        }
+        UITabBar.appearance().standardAppearance = tab
+        UITabBar.appearance().scrollEdgeAppearance = tab
+    }
 }
 
+/// Карточка: прямоугольник с волосяной рамкой, без тени и скругления — вырезка из бумаги.
 struct CardBackground: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous).strokeBorder(Theme.line))
+            .background(Theme.surface)
+            .overlay(Rectangle().strokeBorder(Theme.line))
+    }
+}
+
+/// Подпись рубрики: прописные с разрядкой, киноварью. Тот же приём, что у `.eyebrow` на сайте.
+struct SectionLabel: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 11, weight: .medium))
+            .tracking(1.6)
+            .textCase(.uppercase)
+            .foregroundStyle(Theme.accent)
     }
 }
 
 extension View {
     func card() -> some View { modifier(CardBackground()) }
+    func sectionLabel() -> some View { modifier(SectionLabel()) }
 }
 
 enum Fmt {

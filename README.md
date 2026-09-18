@@ -43,4 +43,8 @@ Icon: `swift tools/icon.swift BoW/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 - `RootView` / `MoreView` / `SiteView` — табы, «Ещё» и страницы сайта в вебвью.
 - `Notifier` — локальные уведомления по `GET /api/updates` (что уже показано, помнит `UserDefaults`).
 - `ActivityLog` — persisted journal shown in the app.
+- `Theme.swift` — журнальная тема (18.09.2026): те же hex, что в тёмной половине `theme.css` на сайте,
+  прямоугольные карточки с волосяной рамкой, антиква New York в заголовках, рубрики прописными с разрядкой
+  (`.sectionLabel()`). Заголовки навигации и таб-бар настраиваются раз при запуске —
+  `Theme.configureAppearance()` из `AppDelegate`. Меняется палитра на сайте — менять и здесь.
 - `openapi.yaml` — the ingest API.

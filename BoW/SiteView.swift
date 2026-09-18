@@ -294,7 +294,7 @@ struct SiteView: View {
             if let e = site.lastError {
                 VStack(spacing: 10) {
                     Image(systemName: "wifi.slash").font(.largeTitle).foregroundStyle(Theme.text2)
-                    Text("Сайт не открылся").font(.headline)
+                    Text("Сайт не открылся").font(Theme.display(20, weight: .semibold))
                     Text(e).font(.footnote).foregroundStyle(Theme.text2).multilineTextAlignment(.center)
                     Button("Ещё раз") { site.reload() }.buttonStyle(.borderedProminent)
                 }

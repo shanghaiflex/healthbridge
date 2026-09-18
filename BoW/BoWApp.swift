@@ -36,6 +36,7 @@ struct BoWApp: App {
 final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        Theme.configureAppearance()
         ActivityLog.shared.log("Запуск", detail: application.applicationState == .background ? "в фоне, системой" : "пользователем")
         // BGTaskScheduler requires every identifier to be registered before launch finishes.
         BackgroundScheduler.shared.register()

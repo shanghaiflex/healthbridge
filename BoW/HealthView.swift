@@ -59,7 +59,7 @@ struct HealthView: View {
 
     private var backgroundCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("В фоне").font(.footnote.weight(.semibold)).foregroundStyle(Theme.text2).textCase(.uppercase)
+            Text("В фоне").sectionLabel()
             let status = BackgroundScheduler.refreshStatusText
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: status == "включено" ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
@@ -78,7 +78,7 @@ struct HealthView: View {
 
     private var journalCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Журнал").font(.footnote.weight(.semibold)).foregroundStyle(Theme.text2).textCase(.uppercase)
+            Text("Журнал").sectionLabel()
             if log.entries.isEmpty {
                 Text("Пока пусто").font(.footnote).foregroundStyle(Theme.text3)
             }
