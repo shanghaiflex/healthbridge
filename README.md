@@ -2,8 +2,9 @@
 
 Private SwiftUI app, two jobs:
 
-1. **Лекции** — keeps the two lectures the site says are next (`GET /api/lectures/preload`: what is being
-   listened to, then the queue) downloaded on the phone, plays them with the screen locked (lock-screen controls,
+1. **Лекции** — keeps the three lectures the site says are next (`GET /api/lectures/preload`: what is being
+   listened to, then one next lecture per channel — so Макаров and Bushwacker are both on the phone, not two
+   from the same series) downloaded on the phone, plays them with the screen locked (lock-screen controls,
    ±15/30 s, speed), and pushes the position back (`PATCH /api/lecture/<id>`) every 15 s and on every pause.
    A finished lecture is marked `listened`, its file deleted, and the next one downloaded. Downloads run in a
    background `URLSession` (they survive the app being suspended or killed by iOS) and resume after a dropped
@@ -18,6 +19,10 @@ Private SwiftUI app, two jobs:
    не показывается вовсе. Страницы перечислены в `SiteController.Page`, вебвью создаётся на первом заходе
    (`SitePage`) и дальше живёт, так что позиция в миксах переживает переключение табов. Меню сайта внутри
    приложения скрыто (`app.js` на сайте): у каждой страницы свой таб.
+
+4. **Уведомления** — новая заметка о самочувствии и утренняя сводка советов (`GET /api/updates`).
+   Пуша нет (personal team → нет APNs), уведомление ставит сам телефон, когда iOS будит приложение: синк,
+   BGTask, выход на экран. Часы зеркалят его сами. `Notifier.swift`; тумблер в «Настройках».
 
 ## Build & install (no App Store, personal team)
 ```
@@ -36,5 +41,6 @@ Icon: `swift tools/icon.swift BoW/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 - `LectureStore` / `DownloadManager` / `PlayerEngine` — the lectures side. `LecturesView` is the screen, `PreviewData` feeds the `#Preview`s.
 - `SyncCoordinator` / `HealthKitManager` / `AnchorStore` / `QueueManager` / `NetworkClient` — the health side.
 - `RootView` / `MoreView` / `SiteView` — табы, «Ещё» и страницы сайта в вебвью.
+- `Notifier` — локальные уведомления по `GET /api/updates` (что уже показано, помнит `UserDefaults`).
 - `ActivityLog` — persisted journal shown in the app.
 - `openapi.yaml` — the ingest API.

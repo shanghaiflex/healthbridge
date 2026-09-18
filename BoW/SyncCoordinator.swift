@@ -48,6 +48,7 @@ final class SyncCoordinator: ObservableObject {
             lastError = formatError(error)
         }
         await startBackgroundDelivery()
+        await Notifier.shared.requestAuthorization()
         await updateReachability()
         // Right after permission is granted nothing else would send for hours: do the first (full) sync now.
         await syncNowCompletely(trigger: "first")
@@ -106,6 +107,9 @@ final class SyncCoordinator: ObservableObject {
         }
         await refreshQueueStatus()
         await updateReachability()
+        // Самый частый повод, по которому iOS будит приложение, — новые данные здоровья; заодно и смотрим,
+        // не появилось ли на сервере то, о чём стоит зазвонить (заметка пишется как раз по ним).
+        await Notifier.shared.check(trigger: trigger)
     }
 
     private let sleepPageSize = 2000

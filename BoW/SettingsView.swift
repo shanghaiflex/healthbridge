@@ -32,6 +32,17 @@ struct SettingsView: View {
                 Text("Одна лекция — 150–200 МБ. Уже начатые загрузки продолжают по старому правилу.")
             }
 
+            Section {
+                Toggle("Уведомления", isOn: $settings.notifications)
+                    .onChange(of: settings.notifications) { _, on in
+                        if on { Task { await Notifier.shared.requestAuthorization() } }
+                    }
+            } header: {
+                Text("Уведомления")
+            } footer: {
+                Text("Каждая новая заметка о самочувствии и одна сводка советов утром. Пуша нет (бесплатный Apple ID), уведомление ставит сам телефон, когда iOS будит приложение, — поэтому оно может прийти с задержкой. Часы показывают их сами, пока телефон заперт.")
+            }
+
             Section("Что отправлять в Здоровье") {
                 Toggle("Тренировки", isOn: $settings.enableWorkouts)
                 Toggle("Сон", isOn: $settings.enableSleep)

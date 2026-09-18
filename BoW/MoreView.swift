@@ -3,6 +3,8 @@ import SwiftUI
 /// «Ещё»: the pages of the site that do not earn a place in the bottom bar (iOS shows five tabs and turns a
 /// sixth into a system list of its own), and the app's own two screens — sync journal and settings.
 struct MoreView: View {
+    @ObservedObject private var app = AppState.shared
+
     var body: some View {
         NavigationStack {
             List {
@@ -36,6 +38,12 @@ struct MoreView: View {
             .scrollContentBackground(.hidden)
             .background(Theme.bg.ignoresSafeArea())
             .navigationTitle("Ещё")
+            // Тап по уведомлению открывает страницу сам: Well-being живёт здесь, а не в табах.
+            .navigationDestination(item: $app.morePage) { page in
+                SitePage(page: page)
+                    .navigationTitle(page.title)
+                    .navigationBarTitleDisplayMode(.inline)
+            }
         }
     }
 }

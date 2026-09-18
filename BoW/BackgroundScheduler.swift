@@ -39,6 +39,7 @@ final class BackgroundScheduler {
         let work = Task { @MainActor in
             await LectureStore.shared.refresh(trigger: trigger)
             await SyncCoordinator.shared.syncNowCompletely(trigger: trigger)
+            await Notifier.shared.check(trigger: trigger)
         }
         task.expirationHandler = {
             work.cancel()

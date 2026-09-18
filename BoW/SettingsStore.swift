@@ -90,6 +90,10 @@ final class SettingsStore: ObservableObject {
     @Published var devMode: Bool {
         didSet { defaults.set(devMode, forKey: Keys.devMode) }
     }
+    /// Заметка о самочувствии и утренняя сводка советов (их ставит сам телефон, см. Notifier).
+    @Published var notifications: Bool {
+        didSet { defaults.set(notifications, forKey: Keys.notifications) }
+    }
     /// Lectures are 150–200 MB each; by default they come down over Wi-Fi only.
     @Published var wifiOnly: Bool {
         didSet {
@@ -129,6 +133,7 @@ final class SettingsStore: ObservableObject {
         enableActiveEnergy = defaults.object(forKey: Keys.enableActiveEnergy) as? Bool ?? true
         devMode = defaults.object(forKey: Keys.devMode) as? Bool ?? false
         wifiOnly = defaults.object(forKey: Keys.wifiOnly) as? Bool ?? true
+        notifications = defaults.object(forKey: Keys.notifications) as? Bool ?? true
     }
 
     private enum Keys {
@@ -143,5 +148,6 @@ final class SettingsStore: ObservableObject {
         static let enableActiveEnergy = "enableActiveEnergy"
         static let devMode = "devMode"
         static let wifiOnly = "wifiOnly"
+        static let notifications = "notifications"
     }
 }
