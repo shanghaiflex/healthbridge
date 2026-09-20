@@ -25,6 +25,13 @@ echo "phone: $STATE"
 [ "$1" = "--check" ] && exit 0
 case "$STATE" in "not found"*) echo "iPhone is neither on the cable nor on this Wi-Fi — nothing to do"; exit 1;; esac
 
+# Xcode переиспользует профиль, пока тот не истёк: переустановка за день до конца срока давала те же 7 дней
+# от прошлой недели, а не новые (20.09.2026). Старый профиль приложения стирается, и -allowProvisioningUpdates
+# выписывает свежий — каждая переустановка теперь даёт полные семь дней.
+for P in ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision; do
+  [ -f "$P" ] || continue
+  if security cms -D -i "$P" 2>/dev/null | grep -q "cc.bodywithoutorgans.bow"; then rm -f "$P"; echo "profile: dropped stale $(basename "$P")"; fi
+done
 xcodebuild -project BoW.xcodeproj -scheme BoW -destination "id=$UDID" -configuration Debug \
   -derivedDataPath build/device -allowProvisioningUpdates build 2>&1 | grep -E "error:|BUILD" || true
 APP=build/device/Build/Products/Debug-iphoneos/BoW.app
