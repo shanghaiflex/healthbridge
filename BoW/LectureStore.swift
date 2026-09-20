@@ -98,6 +98,8 @@ final class LectureStore: ObservableObject {
     private func prune() {
         let keep = Set(items.map(\.safeId))
         let playing = PlayerEngine.shared.current?.safeId
+        // И задачи скачивания тоже: файл без задачи — половина уборки.
+        DownloadManager.shared.cancelAll(except: Set(items.map(\.id)))
         for (safeId, url) in DownloadManager.storedFiles() where !keep.contains(safeId) && safeId != playing {
             try? FileManager.default.removeItem(at: url)
             ActivityLog.shared.log("Удалил файл", detail: safeId)

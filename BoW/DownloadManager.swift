@@ -87,7 +87,17 @@ final class DownloadManager: NSObject, ObservableObject {
         // task for it just doubles the traffic. So ask the session first, not our in-memory set.
         session.getAllTasks { tasks in
             let live: Set<URLSessionTask.State> = [.running, .suspended]
-            if tasks.contains(where: { $0.taskDescription == lecture.id && live.contains($0.state) }) {
+            let mine = tasks.filter { $0.taskDescription == lecture.id && live.contains($0.state) }
+            // Маршрут мог смениться (20.09.2026): задача, заведённая на bodywithoutorgans.cc, с домашней сети
+            // до сервера не доходит — провайдер режет Cloudflare, iOS сама докачивает по 20 КБ и снова рвётся,
+            // и так часами («bytes=19113-», «39595-», «60077-» в логе mini). Resume-данные хост не меняют,
+            // поэтому такую задачу отменяем и заводим заново на текущий адрес; 20 КБ не жалко.
+            let stale = mine.filter { $0.originalRequest?.url?.host != url.host && $0.currentRequest?.url?.host != url.host }
+            if !stale.isEmpty {
+                ActivityLog.shared.log("Перезапускаю скачивание", detail: "\(lecture.title): маршрут сменился на \(url.host ?? "?")")
+                stale.forEach { $0.cancel() }
+            }
+            if mine.count > stale.count {
                 DispatchQueue.main.async { self.active.insert(lecture.id) }
                 return
             }
@@ -102,6 +112,18 @@ final class DownloadManager: NSObject, ObservableObject {
             }
             ActivityLog.shared.log("Скачиваю", detail: "\(lecture.title) (\(Fmt.megabytes(lecture.size)))")
             task.resume()
+        }
+    }
+
+    /// Задачи лекций, которых в списке больше нет (20.09.2026). prune() стирал файл, но задача в фоновой
+    /// сессии жила дальше и докачивала дослушанную лекцию по 20 КБ часами — «G5CB5MehT_k bytes=16384-…»
+    /// в логе mini через три часа после «Удалил файл».
+    func cancelAll(except keep: Set<String>) {
+        session?.getAllTasks { tasks in
+            for t in tasks where !(t.taskDescription.map(keep.contains) ?? true) {
+                ActivityLog.shared.log("Отменяю скачивание", detail: "\(t.taskDescription ?? "?"): лекции больше нет в списке")
+                t.cancel()
+            }
         }
     }
 
