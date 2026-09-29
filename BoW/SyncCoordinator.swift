@@ -134,7 +134,8 @@ final class SyncCoordinator: ObservableObject {
         // Metrics page by page (2000 samples), anchor committed after every page: a year of steps is far more
         // than one background launch can swallow at once, and an all-or-nothing read never finished.
         let pageSize = 2000
-        for kind in [MetricKind.hrvSDNN, .restingHeartRate, .steps, .activeEnergy] where enabledMetricKinds.contains(kind) {
+        for kind in [MetricKind.hrvSDNN, .restingHeartRate, .steps, .activeEnergy,
+                     .wristTemperature, .respiratoryRate, .oxygenSaturation, .vo2Max, .bodyMass] where enabledMetricKinds.contains(kind) {
             var pages = 0
             while true {
                 let page = try await healthKit.fetchMetricPage(kind: kind, limit: pageSize)
@@ -154,6 +155,7 @@ final class SyncCoordinator: ObservableObject {
         if settings.enableRestingHR { kinds.insert(.restingHeartRate) }
         if settings.enableSteps { kinds.insert(.steps) }
         if settings.enableActiveEnergy { kinds.insert(.activeEnergy) }
+        if settings.enableVitals { kinds.formUnion([.wristTemperature, .respiratoryRate, .oxygenSaturation, .vo2Max, .bodyMass]) }
         return kinds
     }
 

@@ -29,8 +29,11 @@ final class HealthKitManager {
             HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN),
             HKObjectType.quantityType(forIdentifier: .restingHeartRate),
             HKObjectType.quantityType(forIdentifier: .stepCount),
-            HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)
-        ].compactMap { $0 as HKObjectType? })
+            HKObjectType.quantityType(forIdentifier: .activeEnergyBurned),
+            HKObjectType.quantityType(forIdentifier: .heartRate),   // средний и максимальный пульс тренировки
+            HKObjectType.quantityType(forIdentifier: .swimmingStrokeCount)
+        ].compactMap { $0 as HKObjectType? }
+            + MetricSampleType.allCases.compactMap { $0.hkType as HKObjectType? })
 
         try await healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead)
     }
@@ -98,7 +101,13 @@ final class HealthKitManager {
                 durationMinutes: workout.duration / 60.0,
                 distanceMeters: workout.totalDistance?.doubleValue(for: .meter()),
                 calories: workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()),
-                averageHeartRate: workout.averageHeartRate
+                averageHeartRate: workout.averageHeartRate,
+                maxHeartRate: workout.maxHeartRate,
+                elevationMeters: (workout.metadata?[HKMetadataKeyElevationAscended] as? HKQuantity)?.doubleValue(for: .meter()),
+                indoor: workout.metadata?[HKMetadataKeyIndoorWorkout] as? Bool,
+                swimLocation: workout.swimLocation,
+                lapLengthMeters: (workout.metadata?[HKMetadataKeyLapLength] as? HKQuantity)?.doubleValue(for: .meter()),
+                strokes: workout.swimmingStrokes
             )
         }
         let deletions = result.deleted.map { DeletionPayload(id: $0.uuid.uuidString, sampleType: "workout") }
@@ -167,6 +176,11 @@ private enum MetricSampleType: CaseIterable {
     case restingHeartRate
     case steps
     case activeEnergy
+    case wristTemperature
+    case respiratoryRate
+    case oxygenSaturation
+    case vo2Max
+    case bodyMass
 
     var kind: MetricKind {
         switch self {
@@ -174,6 +188,11 @@ private enum MetricSampleType: CaseIterable {
         case .restingHeartRate: return .restingHeartRate
         case .steps: return .steps
         case .activeEnergy: return .activeEnergy
+        case .wristTemperature: return .wristTemperature
+        case .respiratoryRate: return .respiratoryRate
+        case .oxygenSaturation: return .oxygenSaturation
+        case .vo2Max: return .vo2Max
+        case .bodyMass: return .bodyMass
         }
     }
 
@@ -187,6 +206,16 @@ private enum MetricSampleType: CaseIterable {
             return HKObjectType.quantityType(forIdentifier: .stepCount)
         case .activeEnergy:
             return HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)
+        case .wristTemperature:
+            return HKObjectType.quantityType(forIdentifier: .appleSleepingWristTemperature)
+        case .respiratoryRate:
+            return HKObjectType.quantityType(forIdentifier: .respiratoryRate)
+        case .oxygenSaturation:
+            return HKObjectType.quantityType(forIdentifier: .oxygenSaturation)
+        case .vo2Max:
+            return HKObjectType.quantityType(forIdentifier: .vo2Max)
+        case .bodyMass:
+            return HKObjectType.quantityType(forIdentifier: .bodyMass)
         }
     }
 
@@ -200,6 +229,16 @@ private enum MetricSampleType: CaseIterable {
             return HKUnit.count()
         case .activeEnergy:
             return HKUnit.kilocalorie()
+        case .wristTemperature:
+            return HKUnit.degreeCelsius()
+        case .respiratoryRate:
+            return HKUnit.count().unitDivided(by: HKUnit.minute())
+        case .oxygenSaturation:
+            return HKUnit.percent()   // 0…1; сервер умножает на 100
+        case .vo2Max:
+            return HKUnit(from: "ml/kg*min")
+        case .bodyMass:
+            return HKUnit.gramUnit(with: .kilo)
         }
     }
 
@@ -209,6 +248,11 @@ private enum MetricSampleType: CaseIterable {
         case .restingHeartRate: return .restingHR
         case .steps: return .steps
         case .activeEnergy: return .activeEnergy
+        case .wristTemperature: return .wristTemperature
+        case .respiratoryRate: return .respiratoryRate
+        case .oxygenSaturation: return .oxygenSaturation
+        case .vo2Max: return .vo2Max
+        case .bodyMass: return .bodyMass
         }
     }
 }
@@ -220,6 +264,10 @@ private extension HKUnit {
         case HKUnit.count().unitDivided(by: HKUnit.minute()): return "count/min"
         case HKUnit.count(): return "count"
         case HKUnit.kilocalorie(): return "kcal"
+        case HKUnit.degreeCelsius(): return "degC"
+        case HKUnit.percent(): return "%"
+        case HKUnit(from: "ml/kg*min"): return "ml/kg/min"
+        case HKUnit.gramUnit(with: .kilo): return "kg"
         default: return "unit"
         }
     }
@@ -260,6 +308,28 @@ private extension HKWorkout {
         }
         let unit = HKUnit.count().unitDivided(by: HKUnit.minute())
         return stats.averageQuantity()?.doubleValue(for: unit)
+    }
+
+    var maxHeartRate: Double? {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .heartRate),
+              let stats = statistics(for: type) else { return nil }
+        return stats.maximumQuantity()?.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+    }
+
+    var swimLocation: String? {
+        guard let raw = metadata?[HKMetadataKeySwimmingLocationType] as? NSNumber,
+              let type = HKWorkoutSwimmingLocationType(rawValue: raw.intValue) else { return nil }
+        switch type {
+        case .pool: return "pool"
+        case .openWater: return "openWater"
+        default: return nil
+        }
+    }
+
+    var swimmingStrokes: Double? {
+        guard let type = HKQuantityType.quantityType(forIdentifier: .swimmingStrokeCount),
+              let stats = statistics(for: type) else { return nil }
+        return stats.sumQuantity()?.doubleValue(for: .count())
     }
 }
 

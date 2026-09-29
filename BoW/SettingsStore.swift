@@ -87,6 +87,10 @@ final class SettingsStore: ObservableObject {
     @Published var enableActiveEnergy: Bool {
         didSet { defaults.set(enableActiveEnergy, forKey: Keys.enableActiveEnergy) }
     }
+    /// Температура запястья, дыхание, SpO₂ ночью, VO₂max и вес — одним тумблером (29.09.2026).
+    @Published var enableVitals: Bool {
+        didSet { defaults.set(enableVitals, forKey: Keys.enableVitals) }
+    }
     @Published var devMode: Bool {
         didSet { defaults.set(devMode, forKey: Keys.devMode) }
     }
@@ -131,6 +135,7 @@ final class SettingsStore: ObservableObject {
         enableRestingHR = defaults.object(forKey: Keys.enableRestingHR) as? Bool ?? true
         enableSteps = defaults.object(forKey: Keys.enableSteps) as? Bool ?? true
         enableActiveEnergy = defaults.object(forKey: Keys.enableActiveEnergy) as? Bool ?? true
+        enableVitals = defaults.object(forKey: Keys.enableVitals) as? Bool ?? true
         devMode = defaults.object(forKey: Keys.devMode) as? Bool ?? false
         wifiOnly = defaults.object(forKey: Keys.wifiOnly) as? Bool ?? true
         notifications = defaults.object(forKey: Keys.notifications) as? Bool ?? true
@@ -146,6 +151,7 @@ final class SettingsStore: ObservableObject {
         static let enableRestingHR = "enableRestingHR"
         static let enableSteps = "enableSteps"
         static let enableActiveEnergy = "enableActiveEnergy"
+        static let enableVitals = "enableVitals"
         static let devMode = "devMode"
         static let wifiOnly = "wifiOnly"
         static let notifications = "notifications"

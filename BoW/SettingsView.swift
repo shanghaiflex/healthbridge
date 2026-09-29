@@ -50,6 +50,7 @@ struct SettingsView: View {
                 Toggle("Пульс покоя", isOn: $settings.enableRestingHR)
                 Toggle("Шаги", isOn: $settings.enableSteps)
                 Toggle("Активные калории", isOn: $settings.enableActiveEnergy)
+                Toggle("Температура, дыхание, SpO₂, VO₂max, вес", isOn: $settings.enableVitals)
             }
 
             Section("Разработка") {

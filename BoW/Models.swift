@@ -5,6 +5,13 @@ enum MetricKind: String, Codable {
     case restingHeartRate = "resting_heart_rate"
     case steps = "steps"
     case activeEnergy = "active_energy"
+    // Витальные (29.09.2026): то, что пишут часы ночью, и то, что меряется редко, но говорит о форме.
+    // Сервер принимает любой kind, так что старый сервер их просто сложил бы в базу.
+    case wristTemperature = "wrist_temperature"     // °C, одна на ночь, абсолютная (не отклонение)
+    case respiratoryRate = "respiratory_rate"       // вдохов/мин, много за ночь
+    case oxygenSaturation = "oxygen_saturation"     // %, 0–100
+    case vo2Max = "vo2_max"                         // мл/кг·мин, после бега и ходьбы на улице
+    case bodyMass = "body_mass"                     // кг, с весов
 }
 
 struct WorkoutPayload: Codable, Identifiable {
@@ -16,6 +23,13 @@ struct WorkoutPayload: Codable, Identifiable {
     let distanceMeters: Double?
     let calories: Double?
     let averageHeartRate: Double?
+    // С 29.09.2026: подробности, по которым видно форму, а не только факт тренировки.
+    var maxHeartRate: Double? = nil
+    var elevationMeters: Double? = nil      // набор высоты (вело, бег)
+    var indoor: Bool? = nil                 // дорожка / станок / зал
+    var swimLocation: String? = nil         // pool | openWater
+    var lapLengthMeters: Double? = nil
+    var strokes: Double? = nil
 }
 
 /// One stretch of one stage of sleep, exactly as HealthKit holds it. Until 2026-09-14 the app added the stages up

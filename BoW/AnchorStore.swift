@@ -2,7 +2,9 @@ import Foundation
 import HealthKit
 
 enum AnchorKey: String {
-    case workout
+    /// «workoutV2» с 29.09.2026: у тренировки появились макс. пульс, набор высоты, бассейн/открытая вода —
+    /// новый ключ без якоря перечитывает год, и сервер обновляет уже известные тренировки (uuid тот же).
+    case workout = "workoutV2"
     /// Renamed with the move to raw stage samples (2026-09-14): an unknown key has no anchor, so the year of sleep
     /// is read again in the new shape. The old summaries stay on the server until the nights they cover arrive.
     case sleep = "sleepStages"
@@ -10,6 +12,11 @@ enum AnchorKey: String {
     case restingHR
     case steps
     case activeEnergy
+    case wristTemperature
+    case respiratoryRate
+    case oxygenSaturation
+    case vo2Max
+    case bodyMass
 }
 
 final class AnchorStore {
@@ -55,7 +62,8 @@ final class AnchorStore {
     static let initialHistoryDays = 365
 
     func resetAll() {
-        for key in [AnchorKey.workout, .sleep, .hrv, .restingHR, .steps, .activeEnergy] {
+        for key in [AnchorKey.workout, .sleep, .hrv, .restingHR, .steps, .activeEnergy,
+                    .wristTemperature, .respiratoryRate, .oxygenSaturation, .vo2Max, .bodyMass] {
             defaults.removeObject(forKey: key.rawValue)
         }
     }
